@@ -1,0 +1,94 @@
+//1번, 2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+int Heap[101];
+int n = 0;
+void upheap(int index) {
+	int tmp;
+	int child = index, parent = index/2;	//parent는 나누기다
+	if (index <= 1) {	//등호 추가
+		return;
+	}
+	if (Heap[child] > Heap[parent]) {
+		tmp = Heap[child];
+		Heap[child] = Heap[parent];
+		Heap[parent] = tmp;
+	}
+	upheap(parent);
+}
+void insertItem(int key) {
+	n++;	//1추가하고 원소 넣기(삭제랑 반대)
+	Heap[n] = key;
+	upheap(n);
+}
+void downheap(int index) {
+	if (index >= n)
+		return;
+	int parent, left, right, child,tmp;
+	parent = index;
+	child = left = 2 * index;	//그냥 child까지 싹다 만들어놓고 하자(for 가독성)
+	right = 2 * index + 1;
+
+	if (left > n)	//왼쪽 자식이 없는경우(자식이 없는 경우)
+		return;
+	else if (right <= n)	//오른쪽 자식도 있는 경우
+		child = (Heap[left] > Heap[right]) ? left : right;
+	//원소비교인지 인덱스비교인지 코딩할 때 실수 주의
+	//없으면 그냥 child = left
+	
+
+	if (Heap[parent] < Heap[child]) {
+		tmp = Heap[parent];
+		Heap[parent] = Heap[child];
+		Heap[child] = tmp;
+	}
+
+	downheap(child);
+}
+int removeItem() {
+	int tmp = Heap[1];	//삭제는 끝항이 아닌 첫 항을 주로 다룸(헷갈 ㄴ)
+	Heap[1] = Heap[n];	//원소 지우고 1 삭제 (삽입이랑 반대)
+	n--;
+	downheap(1);
+	return tmp;
+}
+void printHeap() {
+	for (int i = 1; i <= n; i++)
+		printf("%d ", Heap[i]);
+	printf("\n");
+}
+void rBuildHeap(int index) {
+	if (index >= n)
+		return;
+	rBuildHeap(2 * index);
+	rBuildHeap(2 * index + 1);
+	downheap(index);
+}
+void BuildHeap() {
+	for (int i = n / 2; i >= 1; i--)
+		downheap(i);
+}
+void inPlaceHeapSort() {
+	int tmp, N = n;
+	rBuildHeap(1);
+	for (int i = n; i >= 2; i--) {
+		tmp = Heap[i];		
+		Heap[i] = Heap[1];
+		Heap[1] = tmp;	//힙의 1항과 끝항을 교환 후 삭제하는 과정 필요
+
+		n--;	//한 칸 줄이고 (삭제)
+		downheap(1);	//다운힙 해서 최대 뽑아내기
+	}
+	n = N;
+}
+int main() {
+	scanf("%d", &n);
+	for (int i = 1; i <= n; i++) 
+		scanf("%d", &Heap[i]);
+	inPlaceHeapSort();
+	printHeap();
+	return 0;
+}
+
+

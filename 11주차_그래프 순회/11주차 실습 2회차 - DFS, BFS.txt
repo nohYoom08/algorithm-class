@@ -1,0 +1,312 @@
+//1번 => 무방향그래프에 대해서 하는 거다
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct edgeNode {
+	int vertex;
+	int weight;
+	struct edgeNode* link;
+}edgeNode;
+typedef struct Vertex {
+	int vertex;
+	int visit;
+	edgeNode* link;
+}Vertex;
+typedef struct Graph {
+	int n;
+	Vertex* vertices[MAX_VERTEX];
+}Graph;
+
+Graph* graph;
+
+void initGraph()
+{
+	for (int i = 0; i < graph->n; i++) {
+		graph->vertices[i] = (Vertex*)malloc(sizeof(Vertex));
+			//숫자 정점이라 그냥 initGraph에서 바로 초기화
+		graph->vertices[i]->link = NULL;
+		graph->vertices[i]->visit = 0;
+	}
+}
+
+edgeNode* getNode()
+{
+	edgeNode* new = (edgeNode*)malloc(sizeof(edgeNode));
+	new->link = NULL;
+
+	return new;
+}
+
+void insertEdge(int vertex1, int vertex2)
+{
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	edgeNode* new = getNode();
+	new->vertex = vertex2;
+
+	edgeNode* tmp = graph->vertices[index1]->link;
+	edgeNode* tmp2 = graph->vertices[index1];
+	if (tmp == NULL)
+		//삽입할 때 tmp가 NULL인 경우와 아닌 경우의 공통점 : tmp->link = new
+		//차이점 : NULL이 아닌 경우에 new->link에 뭔가를 연결해야하는 코드가 하나 더 추가됨
+	{
+		graph->vertices[index1]->link = new;
+		return;
+	}
+
+	while (tmp != NULL && new->vertex > tmp->vertex)	//오름차순 정렬
+	{
+		tmp2 = tmp;
+		tmp = tmp->link;
+	}
+
+
+	if (tmp == NULL)
+	{
+		tmp2->link = new;
+	}
+	else
+	{
+		tmp2->link = new;
+		new->link = tmp;
+	}
+
+	return;
+}
+
+void DFS(int vertex)
+{
+	if (vertex > graph->n || vertex < 1) {
+		printf("-1\n");
+		return;
+	}
+
+	int index = vertex - 1;
+	edgeNode* tmp = graph->vertices[index]->link;
+	// tmp == NULL 조사는? => 연결그래프라는 전제가 있으니 걱정ㄴ 없으면 조사 당연히 필요
+
+	if (graph->vertices[index]->visit == 1)	//현재 방문하고 있는 정점 조사
+		//두 번째 방문 조사 + 재귀 종료 조건 => 전진할 때의 방문체크가 아닌, 후퇴하면서 하는 방문체크
+		
+		//이미 방문한 정점을 또 다시 방문처리하는 걸 방지 (밑에 printf구문)
+		
+		//**이 때 tmp->visit이 아닌걸 주의. 현재 방문하고 있는 vertex에대한 조사를 하고있는거니까**
+		//애초에 visit은 정점인 헤더에만 있는거니까 tmp->visit자체는 접근이 안 됨
+		return;
+
+
+	graph->vertices[index]->visit = 1;		//방문한 정점 '방문 처리'
+	printf("%d\n", vertex);
+
+	while (tmp != NULL)	//해당 정점에 부착되어있는 간선들 순회
+	{
+		int next_index = tmp->vertex - 1;
+		if (graph->vertices[next_index]->visit == 0)	//방문하지 않은 정점이면
+		{
+			DFS(tmp->vertex);	//해당 정점으로 DFS 재귀 시작
+		}
+		tmp = tmp->link;	//DFS 재귀마치고 후퇴한 상황에서 다음 간선으로 이동
+	}
+}
+void printEdge(int vertex)
+{
+
+	if (vertex > graph->n || vertex < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+
+	int index = vertex - 1;
+	edgeNode* tmp = graph->vertices[index]->link;
+	while (tmp != NULL)
+	{
+		printf("%d", tmp->vertex);
+		tmp = tmp->link;
+	}
+	printf("\n");
+
+	return;
+}
+
+int main()
+{
+	int m, s, in, out;
+	graph = (Graph*)malloc(sizeof(Graph));
+	scanf("%d %d %d", &graph->n, &m, &s);
+	initGraph();	//graph초기화는 n을 받고나서 (순서 중요)
+
+
+	for (int i = 0; i < m; i++)
+	{
+		scanf("%d %d", &in, &out);
+		insertEdge(in, out);
+		if (in != out)	//양끝점이 같지 않은 경우(일반적인 상황)
+			insertEdge(out, in);
+	}
+
+
+	DFS(s);
+	return 0;
+}
+
+
+//2번 후..
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+
+int n;
+int graph[MAX_VERTEX][MAX_VERTEX] = { 0 };
+int visited[MAX_VERTEX] = { 0 };
+
+//Queue 구현
+typedef struct {
+	int* queue;
+	int front, rear;
+	int size;
+}Queue;
+Queue* CreateQueue(int size) {
+	Queue* Q;
+	Q = (Queue*)malloc(sizeof(Queue));
+	Q->front = 0;
+	Q->rear = 0;
+	Q->size = size;
+	Q->queue = (int*)malloc(sizeof(int) * size);
+	for (int i = 0; i < Q->size; i++)
+		Q->queue[i] = 0;	//'초기화'
+	return Q;
+}
+int isEmpty(Queue* Q) {
+	if (Q->front == Q->rear)
+		return 1;
+	else
+		return 0;
+}
+int isFull(Queue* Q) {
+	if ((Q->rear + 1) % Q->size == Q->front)
+		return 1;
+	else
+		return 0;
+}
+void printQueue(Queue* Q) {
+	for (int i = 0; i < Q->size; i++)
+		printf(" %d", Q->queue[i]);
+	printf("\n");
+}
+int enQueue(Queue* Q, int data) {
+	if (isFull(Q) == 1) {
+		printf("overflow");
+		printQueue(Q);
+		return;
+	}
+	else {
+		Q->rear = (Q->rear + 1) % Q->size;
+		Q->queue[Q->rear] = data;
+	}
+}
+int deQueue(Queue* Q) {
+	if (isEmpty(Q) == 1) {
+		printf("underflow");
+		return;
+	}
+	else {
+		Q->front = (Q->front + 1) % Q->size;
+		int result = Q->queue[Q->front];
+		Q->queue[Q->front] = 0;
+		return result;
+	}
+}
+
+
+
+void insertEdge(int vertex1, int vertex2)
+{
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	graph[index1][index2] = 1;
+}
+
+void printEdge(int vertex)
+{
+	if (vertex > n || vertex < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+	int index = vertex - 1;
+
+
+	for (int i = 0; i < n; i++)
+		if (graph[index][i] != 0)
+			//인접행렬에서 이차원배열인데 일차원까지만 쓰는 거 조심
+			printf("%d %d ", i + 1, graph[index][i]);
+	printf("\n");
+
+	return;
+}
+
+void BFS(Queue* Q, int vertex)
+{
+	if (vertex > n || vertex < 1) {
+		printf("-1\n");
+		return;
+	}
+
+	int index;
+	enQueue(Q, vertex); //BFS 시작 (시작정점 큐에 넣기)
+
+
+	while (!isEmpty(Q))
+		//BFS를 시작하고 끝날 때까지 큐 안에 항상 데이터 존재 
+		//첫 루프 때도 이미 위에 enQueue하고 시작하기 때문에 조건 만족
+	{
+		vertex = deQueue(Q);	//반환된 정점으로 전진
+
+		index = vertex - 1;
+		if (visited[index] == 0)
+		{
+			visited[index] = 1; //방문 처리 (visited값 변경, 출력)
+			printf("%d\n", vertex);
+		}
+		for (int i = 0; i < n; i++) {	//현재 위치를 제외한 나머지 모든 정점들 조사
+			if (graph[index][i] != 0 && visited[i] == 0)	//대괄호 안에 i인지 index인지 잘 체크 
+				//인접정점일 경우(간선 존재) && 방문하지 않은 정점인 경우
+				enQueue(Q, i + 1);
+				//큐에 삽입
+		}
+	}
+}
+
+int main()
+{
+	int m, s, in, out;
+	scanf("%d %d %d", &n, &m, &s);
+	Queue* Q = CreateQueue(MAX_VERTEX);
+
+	for (int i = 0; i < m; i++)
+	{
+		scanf("%d %d", &in, &out);
+		insertEdge(in, out);
+		if (in != out)	//양끝점이 같지 않은 경우(일반적인 상황)
+			insertEdge(out, in);
+	}
+
+	/*
+		for (int i = 0; i < n; i++)
+		{
+			printf("%d : ",i+1);
+			printEdge(i + 1);
+		}
+	*/
+	BFS(Q, s);
+	return 0;
+}

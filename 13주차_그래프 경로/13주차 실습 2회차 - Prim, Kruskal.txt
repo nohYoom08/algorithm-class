@@ -1,0 +1,384 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct edgeNode {
+	int vertex;
+	int weight;
+	struct edgeNode* link;
+}edgeNode;
+typedef struct Vertex {
+	int vertex;
+	int visit;
+	edgeNode* link;
+}Vertex;
+typedef struct Graph {
+	int n;
+	int m;
+	Vertex* vertices[MAX_VERTEX];
+}Graph;
+
+
+//우선순위큐 (큐에 넣는 자료형에 따라 힙의 자료형도 적절히 수정)
+edgeNode* Heap[MAX_VERTEX];	
+//따로 동적할당 받으려 하지 말고 포인터면 그냥 포인터채로 배열만들기
+int N = 0;
+void upheap(int index) {
+	edgeNode* tmp;
+	int child = index, parent = index / 2;	//parent는 나누기다
+	if (index <= 1) {	//등호 추가
+		return;
+	}
+	if (Heap[child]->weight < Heap[parent]->weight) {
+		tmp = Heap[child];
+		Heap[child] = Heap[parent];
+		Heap[parent] = tmp;
+	}
+	upheap(parent);
+}
+void insertItem(edgeNode* key) {
+	N++;	//1추가하고 원소 넣기(삭제랑 반대)
+	Heap[N] = key;
+	upheap(N);
+}
+void downheap(int index) {
+	if (index >= N)
+		return;
+	int parent, left, right, child;
+	edgeNode* tmp;
+	parent = index;
+	child = left = 2 * index;	//그냥 child까지 싹다 만들어놓고 하자(for 가독성)
+	right = 2 * index + 1;
+
+	if (left > N)	//왼쪽 자식이 없는경우(자식이 없는 경우)
+		return;
+	else if (right <= N)	//오른쪽 자식도 있는 경우
+		child = (Heap[left]->weight < Heap[right]->weight) ? left : right;
+	//원소비교인지 인덱스비교인지 코딩할 때 실수 주의
+	//없으면 그냥 child = left
+
+
+	if (Heap[parent]->weight > Heap[child]->weight) {
+		tmp = Heap[parent];
+		Heap[parent] = Heap[child];
+		Heap[child] = tmp;
+	}
+
+	downheap(child);
+}
+edgeNode* removeItem() {
+	if (N < 1)
+		return NULL;
+	edgeNode* tmp = Heap[1];	//삭제 및 반환할 첫 항값 저장
+	Heap[1] = Heap[N];	//원소 지우고 1 삭제 (삽입이랑 반대)
+	N--;
+	downheap(1);
+	return tmp;
+}
+void printHeap() {
+	for (int i = 1; i <= N; i++)
+		printf("%d ", Heap[i]->vertex);
+	printf("\n");
+}
+
+
+Graph* graph;
+
+edgeNode* getNode()
+{
+	edgeNode* new = (edgeNode*)malloc(sizeof(edgeNode));
+	new->link = NULL;
+
+	return new;
+}
+void initGraph()
+{
+	for (int i = 0; i < graph->n; i++)
+	{
+		graph->vertices[i] = (Vertex*)malloc(sizeof(Vertex));
+		graph->vertices[i]->link = NULL;
+	}
+}
+void insertVertex(int vertex) {
+	int index = vertex - 1;
+	Vertex* tmp = graph->vertices[index];	//tmp에 해당 정점 연결
+	tmp->vertex = vertex;
+	tmp->visit = 0;
+
+
+	return;
+}
+
+void insertEdge(int vertex1, int vertex2, int weight)
+{
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+	//	printf("index1 = %d / index2 = %d\n", index1, index2);
+	if (index1 == -1 || index2 == -1)
+	{
+		printf("그런 정점은 없습니다!");
+		return;
+	}
+
+	edgeNode* new = getNode();
+	new->vertex = vertex2;
+	new->weight = weight;
+
+	edgeNode* tmp = graph->vertices[index1]->link;
+
+
+
+	if (tmp == NULL) //새 간선은 바로 첫 노드에 삽입
+	{
+		graph->vertices[index1]->link = new;
+		return;
+	}
+	else
+	{
+		graph->vertices[index1]->link = new;
+		new->link = tmp;
+	}
+
+
+
+	return;
+}
+void buildGraph()
+{
+	int vertex1, vertex2;
+	int weight;
+
+	scanf("%d", &graph->n);
+	getchar();
+	initGraph();
+	for (int i = 0; i < graph->n; i++)
+		insertVertex(i + 1);
+
+	scanf("%d", &graph->m);
+	getchar();
+	for (int i = 0; i < graph->m; i++)
+	{
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		insertEdge(vertex1, vertex2, weight);
+		if (vertex1 != vertex2)
+			insertEdge(vertex2, vertex1, weight);
+		getchar();
+	}
+
+	return;
+}
+
+
+void printEdge(int vertex)
+{
+
+	if (vertex > graph->n || vertex < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+
+	int index = vertex - 1;
+	edgeNode* tmp = graph->vertices[index]->link;
+	while (tmp != NULL)
+	{
+		printf("%c", tmp->vertex);
+		tmp = tmp->link;
+	}
+	printf("\n");
+
+	return;
+}
+
+void Prim(int start_vertex)
+{
+	int start_index = start_vertex - 1;
+	int next_index = start_index;
+
+	int visited_cnt = 0;
+	int sum_weight = 0;
+
+
+	edgeNode* tmp = graph->vertices[start_index]->link;
+		//시작 정점에 연결
+	graph->vertices[next_index]->visit = 1;
+
+	while (visited_cnt < graph->n)	//정점 수만큼 순회 (각 정점의 인접 간선들을 다루기 때문)
+	{
+		printf("%d ", graph->vertices[next_index]->vertex);	//방문 처리
+		while (tmp != NULL)		//현재 위치의 부착간선들 전부 우선순위 큐에 삽입
+		{
+			insertItem(tmp);
+			tmp = tmp->link;
+		}
+
+		tmp = removeItem();		//가중치 최솟값인 간선 반환
+		while (tmp != NULL && graph->vertices[tmp->vertex - 1]->visit == 1)
+			//vertex-1는 정점의 index를 의미
+			//우선순위 큐가 비어있지 않음 && 반환받은 간선이 이미 방문한 정점을 향해있음
+			tmp = removeItem();
+
+		if (tmp != NULL)	//우선순위 큐에 원소가 남아있는 경우
+		{
+			next_index = tmp->vertex - 1;	
+			//방문하지 않았고,
+			//우선순위 큐에 있는 간선들 중 가중치가 최소인 간선에 해당하는, 다음 행선지인 정점 반환
+			graph->vertices[next_index]->visit = 1;	//방문 처리
+
+			sum_weight += tmp->weight;	//전진했던 간선의 가중치 합산
+			tmp = graph->vertices[next_index]->link;
+				//이제 다음에 방문할 노드 다 힙에 집어넣으러 다음 정점으로 전진
+		}
+
+		visited_cnt++;
+	}
+	printf("\n%d", sum_weight);
+}
+
+
+
+
+
+int main()
+{
+	graph = (Graph*)malloc(sizeof(Graph));
+	buildGraph();
+
+	Prim(1);
+
+	return 0;
+}
+
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+typedef struct Edge {	//간선리스트 (시점, 종점, 가중치로 구성)
+	int start;
+	int end;
+	int weight;
+}Edge;
+typedef struct Graph {
+	int n;
+	int m;
+	Edge edges[MAX_VERTEX];
+	int cnt_edges;
+}Graph;
+
+Graph* graph;
+void insertEdge(int vertex1, int vertex2, int weight)
+{
+	graph->edges[graph->cnt_edges].start = vertex1;
+	graph->edges[graph->cnt_edges].end = vertex2;
+	graph->edges[graph->cnt_edges].weight = weight;
+
+	graph->cnt_edges++;
+
+	return;
+}
+void edgeWeightSort()	//단순 간선들 정렬(우선순위 큐)
+{
+	Edge tmp;
+
+	for (int i = 0; i < graph->cnt_edges - 1; i++)
+	{
+		for (int j = i + 1; j < graph->cnt_edges; j++)
+		{
+			if (graph->edges[i].weight > graph->edges[j].weight)
+			{
+				tmp = graph->edges[i];
+				graph->edges[i] = graph->edges[j];
+				graph->edges[j] = tmp;
+			}
+		}
+	}
+
+	return;
+}
+void buildGraph()
+{
+	int vertex1, vertex2, weight;
+
+	scanf("%d", &graph->n);
+
+	scanf("%d", &graph->m);
+	for (int i = 0; i < graph->m; i++) {
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		insertEdge(vertex1, vertex2, weight);
+	}
+	edgeWeightSort();
+
+	return;
+}
+void Kruskal()
+{
+	Edge kruskal[MAX_VERTEX];
+
+	int parent[MAX_VERTEX];
+		//각 정점들의 소속을 담을 배열(어떤 정점이 자신의 부모 또는 조상인가에 대한 정보)
+	int big, small;
+	int start_index, end_index;
+	int cnt_kruskal = 0;
+	int sum_weight = 0;
+
+
+	for (int i = 0; i < graph->n; i++)
+		//각 정점에 자신의 부모노드(정점 숫자) 삽입
+		//(자신의 현재 소속을 의미, 일단은 각자 개별 소속에 들어가있음)
+		parent[i] = i + 1;
+
+	for (int i = 0; i < graph->m; i++) //간선리스트 내 간선들 조사
+	{
+		start_index = graph->edges[i].start - 1;
+		end_index = graph->edges[i].end - 1;
+
+		if (parent[start_index] != parent[end_index])
+			//시점과 종점의 "소속"이 같지 않은 경우에만.
+			//같다면 이미 시점과 종점은 다른 간선들로 연결되어있는 것이니 조사 안 해도 됨
+		{
+			if (parent[start_index] > parent[end_index])
+				//각자 자기 부모노드(소속) 비교
+			{
+				big = parent[start_index];
+				small = parent[end_index];
+			}
+			else
+			{
+				big = parent[end_index];
+				small = parent[start_index];
+			}
+
+			for (int i = 0; i < graph->n; i++)
+				//진 쪽이 이긴쪽의 부모노드로 전부 수정 (숫자가 크면 진 거임)
+				if (parent[i] == big)
+					parent[i] = small;
+
+			kruskal[cnt_kruskal++] = graph->edges[i];
+				//해당 시점과 종점을 연결해주는 첫 간선 삽입
+				//(인접이 아니라 단순히 다른 정점들을 거쳐서 이어주는 것도 포함)
+		}
+	}
+
+	for (int i = 0; i < cnt_kruskal; i++)	
+		//위 루프를 통해 만들어진 최소 신장트리의 간선들 순회
+	{
+		printf("%d ", kruskal[i].weight);
+		sum_weight += kruskal[i].weight;
+	}
+	printf("\n%d", sum_weight);
+}
+int main()
+{
+	graph = (Graph*)malloc(sizeof(Graph));
+	buildGraph();
+
+	Kruskal();
+
+	return 0;
+}

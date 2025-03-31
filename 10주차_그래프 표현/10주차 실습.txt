@@ -1,0 +1,307 @@
+//1번 에휴..그래프 똑바로 보자 뭔가 이상하면 개수대로 세보자 (양방향간선 * 2 + 자기자신 간선)
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 50
+typedef struct graphNode {
+	int vertex;
+	int weight;
+	struct graphNode* link;
+}graphNode;
+
+typedef struct Graph {
+	int n;
+	graphNode* adjList[MAX_VERTEX];
+}Graph;
+
+void initGraph(Graph* graph) {
+	for (int i = 0; i < graph->n; i++)
+		graph->adjList[i] = NULL;
+}
+graphNode* getNode() {
+	graphNode* new = (graphNode*)malloc(sizeof(graphNode));
+	new->link = NULL;
+
+	return new;
+}
+void insertVertex(Graph* graph, int vertex1, int vertex2, int weight) {	
+	//결국 삽입함수를 따로 만드는 게 베스트인 것 같다
+	int index = vertex1 - 1;
+
+	graphNode* tmp = NULL;
+	graphNode* new = getNode();
+	new->link = NULL;
+	new->vertex = vertex2;
+	new->weight = weight;
+
+	tmp = graph->adjList[index];
+	if (tmp == NULL) {
+		graph->adjList[index] = new;
+		return;
+	}
+
+//	printf("tmp->vertex = %d\n", tmp->vertex);
+	if (new->vertex < tmp->vertex) {	
+			//첫 번째 노드부터 새 노드 정점보다 큰 경우(탐색 안하고 바로 삽입)
+		new->link = tmp;
+		graph->adjList[index] = new; 
+			//초기 삽입일 땐 tmp가 아닌 시작점에 직접 대입인지 제발 판단
+		return;
+	}
+//	printf("add loop start\n");
+	while (tmp->link != NULL) {
+		if (new->vertex < tmp->link->vertex) {
+			new->link = tmp->link;
+			tmp->link = new;
+			break;
+		}
+		tmp = tmp->link;
+	}
+	tmp->link = new;
+}
+void printWeight(Graph* graph, int num) {
+	if (num > graph->n || num<1) {
+		printf("-1\n");
+		return;
+	}
+
+	int index = num - 1;
+	graphNode* tmp = graph->adjList[index];
+	
+	while (tmp != NULL) {
+		printf("%d %d ", tmp->vertex, tmp->weight);
+		tmp = tmp->link;
+	}
+	printf("\n");
+	return;
+}
+
+void changeWeight(Graph* graph, int num1, int num2, int weight) {
+	int index1 = num1 - 1;
+	int index2 = num2 - 1;
+	if (num1>graph->n || num2>graph->n || num1<1 || num2<1) {
+		printf("-1\n");
+		return;
+	}
+
+	graphNode* tmp = graph->adjList[index1];
+	graphNode* tmp2 = NULL;
+	while (tmp != NULL) {
+//		printf("searching!\n");
+		if (tmp->vertex == num2) {
+			if (weight == 0) {
+
+				if (tmp2 != NULL) {
+	//				printf("tmp->vertex = %d / tmp->link = %p\n", tmp->vertex,tmp->link);
+					tmp2->link = tmp->link;	//삭제
+				}
+				else
+					graph->adjList[index1] = tmp->link;
+				
+				if (num1 == num2)	//정점이 자기 자신과 연결되어있는 경우
+					return;
+				tmp = graph->adjList[index2];
+				tmp2 = NULL;
+	//			printf("deleted!\n");
+				while (tmp != NULL) {
+					if (tmp->vertex == num1) {
+			//			printf("@tmp->vertex = %d / tmp->link = %p\n", tmp->vertex, tmp->link);
+						if (tmp2 != NULL)
+							tmp2->link = tmp->link;
+						else
+							graph->adjList[index2] = tmp->link;
+//						printf("final deleted!\n");
+						return;
+					}
+					tmp2 = tmp;
+					tmp = tmp->link;
+				}
+			}
+
+			else {
+				tmp->weight = weight;
+
+				tmp = graph->adjList[index2];
+				while (tmp != NULL) {
+					if (tmp->vertex == num1) {
+						tmp->weight = weight;
+						return;
+					}
+					tmp2 = tmp;
+					tmp = tmp->link;
+				}
+			}
+		}
+		tmp2 = tmp;
+		tmp = tmp->link;
+	}
+
+	if (weight != 0) {
+		insertVertex(graph, num1, num2, weight);
+		if (num1 != num2)
+			insertVertex(graph, num2, num1, weight);
+	}
+
+	return;
+}
+
+int main() {
+	int a, b, w,v;
+	char fx;
+	graphNode* new;
+	Graph* graph = (Graph*)malloc(sizeof(Graph));
+	graph->n = 6;
+	initGraph(graph);
+	insertVertex(graph, 1, 2, 1);
+	insertVertex(graph, 1, 3, 1);
+	insertVertex(graph, 1, 4, 1);
+	insertVertex(graph, 1, 6, 2);
+	insertVertex(graph, 2, 1, 1);
+	insertVertex(graph, 2, 3, 1);
+	insertVertex(graph, 3, 1, 1);
+	insertVertex(graph, 3, 2, 1);
+	insertVertex(graph, 3, 5, 4);
+	insertVertex(graph, 4, 1, 1);
+	insertVertex(graph, 5, 3, 4);
+	insertVertex(graph, 5, 5, 4);
+	insertVertex(graph, 5, 6, 3);
+	insertVertex(graph, 6, 1, 2);
+	insertVertex(graph, 6, 5, 3);
+
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q') {
+		switch (fx) {
+		case 'a':
+			scanf("%d", &v);
+			getchar();
+			printWeight(graph, v);
+			break;
+		case 'm':
+			scanf("%d %d %d", &a, &b, &w);
+			getchar();
+			changeWeight(graph, a, b, w);
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+
+	return 0;
+}
+
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 50
+int n;
+void initGraph(int graph[][MAX_VERTEX]) {
+
+}
+void insertVertex(int graph[][MAX_VERTEX], int vertex1, int vertex2, int weight) {
+	
+	int index1, index2;
+	index1 = vertex1 - 1;
+	index2 = vertex2 - 1;
+	graph[index1][index2] = weight;
+	graph[index2][index1] = weight;
+}
+void printWeight(int graph[][MAX_VERTEX], int num) {
+	if (num > n || num < 1 ) {
+		printf("-1\n");
+		return;
+	}
+
+	int index = num - 1;
+	for (int i = 0; i < n; i++)
+		if (graph[index][i] != 0) 
+			printf("%d %d ", i+1, graph[index][i]);
+	printf("\n");
+	return;
+}
+
+void changeWeight(int graph[][MAX_VERTEX], int num1, int num2, int weight) {
+	if (num1 > n || num2 > n || num1 < 1 || num2 < 1) {
+		printf("-1\n");
+		return;
+	}
+	
+	int index1, index2;
+	index1 = num1 - 1;
+	index2 = num2 - 1;
+
+	for (int i = 0; i < n; i++) {
+		if (i == index2) {
+			graph[index1][i] = weight;
+			for (int j = 0; j < n; j++) {
+				if (j == index1) {
+					graph[index2][j] = weight;
+					return;
+				}
+			}
+		}
+	}
+
+	if (weight != 0) {
+		insertVertex(graph, num1, num2, weight);
+		if (num1 != num2)
+			insertVertex(graph, num2, num1, weight);
+	}
+
+	return;
+}
+
+int main() {
+	int a, b, w,v;
+	char fx;
+	int graph[MAX_VERTEX][MAX_VERTEX] = { 0 };	//이차원 배열 0으로 초기화하는 법
+
+	n = 6;
+	initGraph(graph);
+	insertVertex(graph, 1, 2, 1);
+	insertVertex(graph, 1, 3, 1);
+	insertVertex(graph, 1, 4, 1);
+	insertVertex(graph, 1, 6, 2);
+	insertVertex(graph, 2, 1, 1);
+	insertVertex(graph, 2, 3, 1);
+	insertVertex(graph, 3, 1, 1);
+	insertVertex(graph, 3, 2, 1);
+	insertVertex(graph, 3, 5, 4);
+	insertVertex(graph, 4, 1, 1);
+	insertVertex(graph, 5, 3, 4);
+	insertVertex(graph, 5, 5, 4);
+	insertVertex(graph, 5, 6, 3);
+	insertVertex(graph, 6, 1, 2);
+	insertVertex(graph, 6, 5, 3);
+
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q') {
+		switch (fx) {
+		case 'a':
+			scanf("%d", &v);
+			getchar();
+			printWeight(graph, v);
+			break;
+		case 'm':
+			scanf("%d %d %d", &a, &b, &w);
+			getchar();
+			changeWeight(graph, a, b, w);
+			//-1 출력 한 번만 해야해서 insert두 번 못 씀. 정 여기 main에서 if문 쓰는 법도 있겠지만.
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+
+	return 0;
+}

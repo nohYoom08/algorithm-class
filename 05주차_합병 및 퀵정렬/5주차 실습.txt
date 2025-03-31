@@ -1,0 +1,452 @@
+//1번 - 문제 조건 맞춰서 도저히 못 풀겄다 하
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+
+//구조체 활용 또는 헤더노드배열 반환
+typedef struct listNode {
+	int data;
+	struct listNode* link;
+}listNode;
+
+typedef struct headNode {
+	listNode* head;
+}headNode;
+
+typedef struct twoNode {
+	headNode* L1, * L2;
+}twoNode;
+
+headNode* mergeSort(headNode* L) {
+	if (L->head->link == NULL)
+		return L;
+
+	int k2, cnt = 0;
+	listNode* tmp = L->head;
+
+	while (tmp != NULL) {
+		tmp = tmp->link;
+		cnt++;
+	}
+	k2 = cnt / 2;
+
+	headNode* merged_L;
+	if (cnt > 1) {
+		twoNode* parted = mg_partition(L, k2);
+		mergeSort(parted->L1);
+		mergeSort(parted->L2);
+		merged_L = merge(parted->L1, parted->L2);
+	}
+
+	return merged_L;
+}
+
+headNode* merge(headNode* L1, headNode* L2) {
+	listNode* tmp1, *tmp2, *tmp;
+	headNode* L3;
+	tmp1 = L1->head;
+	tmp2 = L2->head;
+
+	L3 = NULL;
+	if (tmp1 != NULL && tmp2 != NULL) {
+		if (tmp1->data < tmp2->data) {
+			L3 = L1;
+			tmp1 = tmp1->link;
+		}
+		else if (tmp1->data > tmp2->data) {
+			L3 = L2;
+			tmp2 = tmp2->link;
+		}
+		else {
+			L3 = L1;
+			tmp1 = tmp1->link;
+			tmp2 = tmp2->link;
+		}
+	}
+
+	tmp = L3;
+	while (tmp1 != NULL && tmp2 != NULL) {
+		if (tmp1->data < tmp2->data) {
+			tmp->link = tmp1;
+			tmp1 = tmp1->link;
+		}
+		else if (tmp1->data > tmp2->data) {
+			tmp->link = tmp2;
+			tmp2 = tmp2->link;
+		}
+		else {
+			tmp->link = tmp1;
+			tmp1 = tmp1->link;
+			tmp2 = tmp2->link;
+		}
+	}
+
+	while (tmp1 != NULL && tmp2 == NULL) {
+		tmp->link = tmp1;
+		tmp1 = tmp1->link;
+	}
+	while (tmp1 == NULL && tmp2 != NULL) {
+		tmp->link = tmp2;
+		tmp2 = tmp2->link;
+	}
+
+	return L3;
+}
+
+twoNode* mg_partition(headNode* L, int k) {
+	if (L->head->link == NULL)
+		return L;
+	int k2, cnt = 0;
+	listNode* tmp = L;
+	headNode* L1=L, * L2;
+	twoNode* parted = (twoNode*)malloc(sizeof(twoNode));
+	
+	while (tmp != NULL) {	//개수 세기
+		tmp = tmp->link;
+		cnt++;
+	}
+
+	k2 = cnt / 2;
+	cnt = 0;
+	while (cnt <= k2) {
+		tmp = tmp->link;
+		cnt++;
+	}
+	L2 = tmp->link;
+	tmp->link = NULL;
+
+
+	parted->L1 = L1;
+	parted->L2 = L2;
+	return parted;
+}
+
+
+int main() {
+	int N;
+	scanf("%d", &N);
+	headNode* List = (headNode*)malloc(sizeof(headNode));
+	if (List == NULL) {
+		printf("Not enough memory!\n");
+		return -1;
+	}
+	
+	listNode* tmp = List->head;
+	for (int i = 0; i < N; i++) {
+		listNode* new = (listNode*)malloc(sizeof(listNode));
+		scanf("%d", &new->data);
+		new->link = NULL;
+		tmp->link = new;
+		tmp = tmp->link;
+	}
+	
+	headNode* final_List = mergeSort(List);
+	tmp = final_List->head;
+	while (tmp != NULL) {
+		printf("%d ", tmp->data);
+		tmp = tmp->link;
+	}
+}
+
+
+
+
+//1번 - 해답
+#pragma warning (disable:4996)
+
+#include <stdio.h>
+#include <stdlib.h>
+
+
+
+typedef struct listNode {
+	int data;
+	struct listNode* link;
+}listNode;
+
+
+void m_partition(listNode* L, listNode** L1, listNode** L2, int k) {
+
+	listNode* tmp = L;
+	*L1 = L;
+
+	for (int i = 0; i < (k / 2) - 1; i++) {	//한 번에 나누기
+		tmp = tmp->link;
+	}
+
+	*L2 = tmp->link;
+	tmp->link = NULL;
+}
+
+
+
+listNode* merge(listNode** L1, listNode** L2) {
+
+	listNode* tmp, * L;
+
+	listNode* tmp1 = *L1;
+	listNode* tmp2 = *L2;
+
+	if (tmp1->data <= tmp2->data) {
+
+		L = tmp1;
+		tmp1 = tmp1->link;
+		tmp = L;
+
+	}
+
+	else {
+		L = tmp2;
+		tmp2 = tmp2->link;
+		tmp = L;
+	}
+
+	while ((tmp1 != NULL) && (tmp2 != NULL)) {
+
+		if (tmp1->data <= tmp2->data) {
+			tmp->link = tmp1;
+			tmp1 = tmp1->link;
+			tmp = tmp->link;
+		}
+
+		else {
+			tmp->link = tmp2;
+			tmp2 = tmp2->link;
+			tmp = tmp->link;
+		}
+
+	}
+
+	while (tmp1 != NULL) {
+		tmp->link = tmp1;
+		tmp = tmp1;
+		tmp1 = tmp1->link;
+	}
+
+	while (tmp2 != NULL) {
+		tmp->link = tmp2;
+		tmp = tmp2;
+		tmp2 = tmp2->link;
+	}
+
+	return L;
+}
+
+
+
+void mergeSort(listNode** L, int k) {
+
+	listNode* L1, * L2, * tmp = *L;
+
+	if (k > 1) {
+		m_partition(tmp, &L1, &L2, k);
+
+		if ((k % 2) == 0) {
+			mergeSort(&L1, k / 2);
+			mergeSort(&L2, k / 2);
+		}
+
+		else {
+			mergeSort(&L1, k / 2);
+			mergeSort(&L2, (k / 2) + 1);
+		}
+
+		*L = merge(&L1, &L2);
+	}
+
+}
+
+
+
+void getList(listNode** L, int data) {
+
+	listNode* tmp = *L;
+
+	listNode* new = (listNode*)malloc(sizeof(listNode));
+	new->data = data;
+	new->link = NULL;
+
+	if (*L == NULL)
+		*L = new;
+	else {
+		while (tmp->link != NULL)
+			tmp = tmp->link;
+		tmp->link = new;
+	}
+
+}
+
+
+
+void printList(listNode* L) {
+
+	listNode* tmp = L;
+
+	while (tmp != NULL) {
+		printf(" %d", tmp->data);
+		tmp = tmp->link;
+	}
+	printf("\n");
+}
+
+
+
+void freeList(listNode* L) {
+
+	listNode* tmp = L;
+
+	while (tmp != NULL) {
+		L = L->link;
+		free(tmp);
+		tmp = L;
+	}
+
+}
+
+
+
+int main() {
+
+	int N, data;
+	listNode* L = NULL;
+
+	scanf("%d", &N);
+
+	for (int i = 0; i < N; i++) {
+		scanf("%d", &data);
+		getList(&L, data);
+	}
+
+	mergeSort(&L, N);
+	printList(L);
+	freeList(L);
+}
+
+
+
+//2번
+#pragma warning(disable:4996)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+
+
+int pivoting(int* A, int l, int r) {
+	int rand1, rand2, rand3;
+	if (r - l < 2) {
+		return l;
+	}
+
+	srand((unsigned)time(NULL));
+
+	rand1 = (rand() % (r - l)) + l;
+	rand2 = (rand() % (r - l)) + l;
+	rand3 = (rand() % (r - l)) + l;
+
+
+
+	if ((A[rand1] >= A[rand2] && A[rand1] <= A[rand3]) || 
+		(A[rand1] <= A[rand2] && A[rand1] >= A[rand3])) 
+		return rand1;
+
+	else if ((A[rand2] >= A[rand1]) && (A[rand2] <= A[rand3]) || 
+		(A[rand2] <= A[rand1]) && (A[rand2] >= A[rand3])) 
+		return rand2;
+
+	else 
+		return rand3;
+	
+
+}
+
+
+
+int inPlacePartition(int* A, int l, int r, int k) {
+
+	int temp, i = l, j = r - 1, pivot = A[k];
+
+	temp = A[k];
+	A[k] = A[r];
+	A[r] = temp;
+
+
+
+	while (i <= j) {
+		while (i <= j && A[i] <= pivot) //i부터 출발
+			i = i + 1;
+
+		while (j >= i && A[j] >= pivot) 
+			j = j - 1;
+
+		if (i < j) {		//i, j교환
+			temp = A[i];
+			A[i] = A[j];
+			A[j] = temp;
+		}
+	}
+
+	temp = A[i];	//숨겨둔 pivot교환
+	A[i] = A[r];
+	A[r] = temp;
+
+	return i;
+}
+
+
+
+void inPlaceQuickSort(int* A, int l, int r) {
+
+	int k, a, b, c;
+
+	k = pivoting(A, l, r);
+
+	c = b = inPlacePartition(A, l, r, k);
+
+	if (l >= r) //재귀로 계속 인자를 받다가 l이 r보다 크거나 같은 상황이 생김 => 재귀 종료
+		return;
+	
+
+	while (1) {	
+	//중복체크는 여기서 함. A[b] 또는 A[c] 주변에 계속 같은 값이 있는 경우
+	//그대로 넣게 되면 이미 정렬된 중복된 값을 대상으로 여러번 퀵정렬을 해야하니 비효율적.
+	//중복되는 구간이 없을 때까지 b의 증가 또는 c의 감소 후 a에 대입, 새로운 l과 r 탄생
+		if (A[c] != A[b]) {
+			a = c + 1;	//가독성을 위해서 1 증가시키고
+			break;
+		}
+		c--;
+	}
+	inPlaceQuickSort(A, l, a - 1);	
+		//여기서 1을 다시 뺌. a를 중복구간의 끝과 끝으로 지정해서 가독성을 높이는게 목표일 수 있음
+	inPlaceQuickSort(A, b + 1, r);
+}
+
+
+
+void printList(int* A, int n) {
+
+	for (int i = 0; i < n; i++) {
+		printf(" %d", A[i]);
+	}
+
+}
+
+
+
+void main() {
+
+	int* A, N;
+	scanf("%d", &N);
+
+	A = (int*)malloc(sizeof(int) * N);
+
+	for (int i = 0; i < N; i++) 
+		scanf("%d", &A[i]);
+
+	inPlaceQuickSort(A, 0, N - 1);
+	printList(A, N);
+	free(A);
+
+}

@@ -1,0 +1,337 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct edgeNode {
+	int vertex;
+	int weight;
+	struct edgeNode* link;
+}edgeNode;
+typedef struct Vertex {
+	int vertex;
+	edgeNode* link;
+}Vertex;
+typedef struct Graph {
+	int n;
+	Vertex* vertices[MAX_VERTEX];
+}Graph;
+
+Graph* graph;
+
+void initGraph()
+{
+	for (int i = 0; i < graph->n; i++) {
+		graph->vertices[i] = (Vertex*)malloc(sizeof(Vertex));
+		graph->vertices[i]->link = NULL;
+
+		graph->vertices[i]->vertex = i + 1;
+		//숫자로 된 정점이어서 insertVertex대신 여기에 추가
+		//이름이 있는 정점이라면 insertVertex작업 따로 필요
+	}
+}
+
+edgeNode* getNode()
+{
+	edgeNode* new = (edgeNode*)malloc(sizeof(edgeNode));
+	new->link = NULL;
+
+	return new;
+}
+
+void insertEdge(int vertex1, int vertex2, int weight)
+{
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	edgeNode* new = getNode();
+	new->vertex = vertex2;
+	new->weight = weight;
+
+	edgeNode* tmp = graph->vertices[index1]->link;
+	edgeNode* tmp2 = graph->vertices[index1];
+	if (tmp == NULL)
+		//삽입할 때 tmp가 NULL인 경우와 아닌 경우의 공통점 : tmp->link = new
+		//차이점 : NULL이 아닌 경우에 new->link에 뭔가를 연결해야하는 코드가 하나 더 추가됨
+	{
+		graph->vertices[index1]->link = new;
+		return;
+	}
+
+	while (tmp != NULL && new->vertex > tmp->vertex)	
+		//오름차순 정렬. 
+		//새로 삽입할 정점이 탐색중인 정점보다 크면 계속 뒤로 가는 원리
+	{
+		tmp2 = tmp;
+		tmp = tmp->link;
+	}
+
+
+	if (tmp == NULL)
+		//간선이 없는 정점일 경우 
+		//또는 새로 삽입할 정점이 제일 큰 경우(끝까지 탐색한 경우)
+	{
+		tmp2->link = new;
+	}
+	else
+	{	//중간에 삽입하는 경우
+		tmp2->link = new;
+		new->link = tmp;
+	}
+
+	return;
+}
+
+void changeEdge(int vertex1, int vertex2, int weight)
+{
+	if ((vertex1 > graph->n || vertex1 < 1) ||	//vertex1, vertex2가 정점에 없는 경우
+		(vertex2 > graph->n || vertex2 < 1))
+	{
+		printf("-1\n");
+		return;
+	}
+
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+
+	edgeNode* tmp = graph->vertices[index1]->link;
+	edgeNode* tmp2 = graph->vertices[index1];
+
+	while (tmp != NULL && tmp->vertex != vertex2)
+	{
+		tmp2 = tmp;
+		tmp = tmp->link;
+	}
+
+	//해당 간선이 존재하지 않는 경우 + 그냥 간선 자체가 없는 경우
+	if (tmp == NULL)
+	{
+		if (weight != 0)	//간선 추가 (무게를 0으로 입력 받은 게 아닌 경우 => 삭제가 아니므로)
+		{
+			insertEdge(vertex1, vertex2, weight);
+			if (vertex1 != vertex2)	//루프 간선이 아닌 경우
+				insertEdge(vertex2, vertex1, weight);
+			return;
+		}
+
+		printf("-1\n");
+		return;
+	}
+
+	//해당 간선이 존재하는 경우
+	if (weight == 0)	//삭제해야하는 경우
+	{
+		tmp2->link = tmp->link;
+		free(tmp);
+
+		if (vertex1 != vertex2) {	//루프 간선이 아니라면, 반대쪽도 지우러 출동
+			edgeNode* tmp = graph->vertices[index2]->link;
+			edgeNode* tmp2 = graph->vertices[index2];
+
+			while (tmp != NULL && tmp->vertex != vertex1)
+			{
+				tmp2 = tmp;
+				tmp = tmp->link;
+			}
+
+			tmp2->link = tmp->link;
+			free(tmp);
+		}
+	}
+	else	//수정하는 경우(weight에 값이 있는 경우)
+	{
+		tmp->weight = weight;
+
+		if (vertex1 != vertex2) {	//반대쪽도 수정하러 출동
+
+			edgeNode* tmp = graph->vertices[index2]->link;
+
+			while (tmp != NULL && tmp->vertex != vertex1)
+				tmp = tmp->link;
+
+			tmp->weight = weight;
+		}
+	}
+
+	return;
+}
+
+void printEdge(int vertex)
+{
+
+	if (vertex > graph->n || vertex < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+
+	int index = vertex - 1;
+	edgeNode* tmp = graph->vertices[index]->link;
+	while (tmp != NULL)
+	{
+		printf("%d %d ", tmp->vertex, tmp->weight);
+		tmp = tmp->link;
+	}
+	printf("\n");
+
+	return;
+}
+
+int main()
+{
+	int a, b, w, v;
+	char fx;
+	graph = (Graph*)malloc(sizeof(Graph));
+	graph->n = 6;
+	initGraph();
+
+	insertEdge(1, 2, 1);
+	insertEdge(1, 3, 1);
+	insertEdge(1, 4, 1);
+	insertEdge(1, 6, 2);
+	insertEdge(2, 1, 1);
+	insertEdge(2, 3, 1);
+	insertEdge(3, 1, 1);
+	insertEdge(3, 2, 1);
+	insertEdge(3, 5, 4);
+	insertEdge(4, 1, 1);
+	insertEdge(5, 3, 4);
+	insertEdge(5, 5, 4);
+	insertEdge(5, 6, 3);
+	insertEdge(6, 1, 2);
+	insertEdge(6, 5, 3);
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q')
+	{
+		switch (fx)
+		{
+		case 'a':
+			scanf("%d", &v);
+			getchar();
+			printEdge(v);
+			break;
+
+		case 'm':
+			scanf("%d %d %d", &a, &b, &w);
+			getchar();
+			changeEdge(a, b, w);
+			break;
+
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+	}
+
+	return 0;
+}
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+int n;
+int graph[MAX_VERTEX][MAX_VERTEX] = { 0 };
+void insertEdge(int vertex1, int vertex2, int weight)
+{
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	graph[index1][index2] = weight;	//한 쪽만 삽입(방향간선)
+}
+void printEdge(int vertex)
+{
+	if (vertex > n || vertex < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+	int index = vertex - 1;
+
+	for (int i = 0; i < n; i++)
+		if (graph[index][i] != 0)	//인접행렬에서 이차원배열인데 일차원까지만 쓰는 거 조심
+			printf("%d %d ", i + 1, graph[index][i]);
+	printf("\n");
+
+	return;
+}
+void changeEdge(int vertex1, int vertex2, int weight)
+{
+	if (vertex1 > n || vertex1 < 1 ||
+		vertex2 > n || vertex2 < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	insertEdge(vertex1, vertex2, weight);	
+			//단순 배열 원소값만 바꿔서 삽입, 삭제, 수정 전부 가능
+	if (vertex1 != vertex2)
+		insertEdge(vertex2, vertex1, weight);
+
+	return;
+}
+int main()
+{
+	int a, b, w, v;
+	char fx;
+	n = 6;
+
+	//	graph = (Graph*)malloc(sizeof(Graph));
+	//	graph->n = 6;
+	//	initGraph();
+
+	insertEdge(1, 2, 1);
+	insertEdge(1, 3, 1);
+	insertEdge(1, 4, 1);
+	insertEdge(1, 6, 2);
+	insertEdge(2, 1, 1);
+	insertEdge(2, 3, 1);
+	insertEdge(3, 1, 1);
+	insertEdge(3, 2, 1);
+	insertEdge(3, 5, 4);
+	insertEdge(4, 1, 1);
+	insertEdge(5, 3, 4);
+	insertEdge(5, 5, 4);
+	insertEdge(5, 6, 3);
+	insertEdge(6, 1, 2);
+	insertEdge(6, 5, 3);
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q')
+	{
+		switch (fx)
+		{
+		case 'a':
+			scanf("%d", &v);
+			getchar();
+			printEdge(v);
+			break;
+
+		case 'm':
+			scanf("%d %d %d", &a, &b, &w);
+			getchar();
+			changeEdge(a, b, w);
+			break;
+
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+	}
+
+	return 0;
+}

@@ -1,0 +1,383 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+int deleted, flag = 0;	//삭제시 반환되는 값을 출력하기 위해 전역변수 활용
+typedef struct treeNode {
+	struct treeNode* left, * right;
+	int key;
+}treeNode;
+
+treeNode* getNode() {
+	treeNode* new = (treeNode*)malloc(sizeof(treeNode));
+	new->left = new->right = NULL;
+	return new;
+}
+
+void findElement(treeNode* node, int key) {
+	if (node == NULL) {
+		printf("X\n");
+		return;
+	}
+
+
+	if (key < node->key)
+		findElement(node->left, key);
+	else if (key > node->key)
+		findElement(node->right, key);
+	else {
+		printf("%d\n", key);
+		return;
+	}
+}
+treeNode* insertItem(treeNode* node, int key) {
+	if (node == NULL) {
+		node = getNode();
+		node->key = key;
+		return node;	//return은 회귀다
+	}
+
+	if (key < node->key)
+		node->left = insertItem(node->left, key);
+	else if (key > node->key)
+		node->right = insertItem(node->right,key);
+	else 
+		return node;
+	
+	return node;	
+		//탐색과 재귀 끝내고 빠져 나오는 경우의 수도 당연히 포함(복귀해야지)
+}
+treeNode* minKey(treeNode* node) {
+	treeNode* tmp, * min_node;
+	int min_key;
+	tmp = min_node = node;
+
+	min_key = node->key;
+	while (tmp != NULL) {
+		if (tmp->key < min_key) {
+			min_key = tmp->key;
+			min_node = tmp;
+		}
+		tmp = tmp->left;
+	}
+	return min_node;
+}
+treeNode* deleteItem(treeNode* node, int key) {
+	if (node == NULL) {
+		printf("X\n");
+		return node;
+	}
+
+	treeNode* tmp = node;
+
+	if (key < node->key)
+		node->left = deleteItem(node->left, key);
+	//변수 = 함수(재귀)의 형태 => '함수'의 과정을 거친 주소가 전달됨
+	//ex) A(root주소) = B(정렬함수) => 정렬된 A가 반환됨
+	else if (key > node->key)
+		node->right = deleteItem(node->right, key);
+	else {
+		if (flag == 0)
+			printf("%d\n", key);
+
+		if (node->right == NULL) {
+			node = node->left;
+		}
+		else if (node->left == NULL) {
+			node = node->right;
+		}
+		else {
+			flag = 1;
+			tmp = minKey(node->right);
+			node->key = tmp->key;
+			node->right = deleteItem(node->right,tmp->key);
+		}
+	}
+	return node;
+}
+void printTree(treeNode* node) {
+	if (node == NULL)
+		return;
+	
+	printf("%d ", node->key);
+	printTree(node->left);
+	printTree(node->right);
+
+	return;
+}
+int main() {
+	int key;
+	char fx;
+	treeNode* root = NULL;
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			root = insertItem(root, key);
+			break;
+		case 'p':
+			printTree(root);
+			printf("\n");
+			break;
+		case 'd':
+			scanf("%d", &key);
+			getchar();
+			root = deleteItem(root, key);
+			flag = 0;
+			break;
+		case 's':
+			scanf("%d", &key);
+			getchar();
+			findElement(root, key);
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+	return 0;
+}
+
+
+
+
+
+//2번 //3번 #pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+int deleted, flag = 0;
+typedef struct treeNode {
+	struct treeNode* left, * right, * parent;
+	int key;
+}treeNode;
+
+int getHeight(treeNode* node) {
+	if (node == NULL)
+		return 0;
+	int left_depth = getHeight(node->left);
+	int right_depth = getHeight(node->right);
+
+	return left_depth > right_depth ? left_depth + 1 : right_depth + 1;
+}
+
+int getBF(treeNode* node)
+{
+	return getHeight(node->left) - getHeight(node->right);
+}
+treeNode* getNode() {
+	treeNode* new = (treeNode*)malloc(sizeof(treeNode));
+	new->left = new->right = new->parent = NULL;
+	return new;
+}
+
+treeNode* leftRotation(treeNode* node)
+{
+	treeNode* childNode = node->left;
+	node->left = childNode->right;
+	if (childNode->right != NULL)
+		childNode->right->parent = node;
+
+	childNode->right = node;
+	childNode->parent = node->parent;
+	node->parent = childNode;
+
+	return childNode;
+}
+treeNode* rightRotation(treeNode* node)
+{
+	treeNode* childNode = node->right;
+	node->right = childNode->left;
+	if (childNode->left != NULL)
+		childNode->left->parent = node;
+
+	childNode->left = node;
+	childNode->parent = node->parent;
+	node->parent = childNode;
+
+	return childNode;
+}
+treeNode* LR(treeNode* node)
+{
+	node->left = rightRotation(node->left);
+	return leftRotation(node);
+}
+treeNode* RL(treeNode* node)
+{
+	node->right = leftRotation(node->right);
+	return rightRotation(node);
+}
+treeNode* treeAVL(treeNode* node)
+{
+	int depth = getBF(node);
+	if (depth >= 2) {
+		depth = getBF(node->left);
+		if (depth >= 0)
+			node = leftRotation(node);
+		else
+			node = LR(node);
+	}
+	else if (depth <= -2) {
+		depth = getBF(node->right);
+		if (depth <= 0)
+			node = rightRotation(node);
+		else
+			node = RL(node);
+	}
+
+	return node;
+}
+
+void findElement(treeNode* node, int key) {
+	if (node == NULL) {
+		printf("X\n");
+		return;
+	}
+
+
+	if (key < node->key)
+		findElement(node->left, key);
+	else if (key > node->key)
+		findElement(node->right, key);
+	else {
+		printf("%d\n", key);
+		return;
+	}
+}
+treeNode* insertItem(treeNode* parent, treeNode* node, int key) {
+	if (node == NULL) {
+		node = getNode();
+		node->parent = parent;
+		node->key = key;
+		return node;	//return은 회귀다
+	}
+
+	if (key < node->key) {
+		node->left = insertItem(node, node->left, key);
+		node = treeAVL(node);
+	}
+	else if (key > node->key) {
+		node->right = insertItem(node, node->right, key);
+		node = treeAVL(node);
+	}
+	else
+		return node;
+
+	return node;
+	//탐색과 재귀 끝내고 빠져 나오는 경우의 수도 당연히 포함(복귀해야지)
+}
+treeNode* minKey(treeNode* node) {
+	treeNode* tmp, * min_node;
+	int min_key;
+	tmp = min_node = node;
+
+	min_key = node->key;
+	while (tmp != NULL) {
+		if (tmp->key < min_key) {
+			min_key = tmp->key;
+			min_node = tmp;
+		}
+		tmp = tmp->left;
+	}
+	return min_node;
+}
+treeNode* deleteItem(treeNode* node, int key) {
+	if (node == NULL) {
+		printf("X\n");
+		return node;
+	}
+
+	treeNode* tmp = node;
+
+	if (key < node->key) {
+		node->left = deleteItem(node->left, key);
+		node = treeAVL(node);
+		//변수 = 함수(재귀)의 형태 => '함수'의 과정을 거친 주소가 전달됨
+		//ex) A(root주소) = B(정렬함수) => 정렬된 A가 반환됨
+	}
+	else if (key > node->key) {
+		node->right = deleteItem(node->right, key);
+		node = treeAVL(node);
+	}
+	else {
+		//실질적인 삭제는 위의 두 케이스,
+		//자식을 둘 다 가진경우의 케이스는
+		//재귀와 위의 두 케이스의 실행을 통해서 삭제를 진행하는 것
+		if (flag == 0)
+			printf("%d\n", key);
+
+		if (node->right == NULL) {
+			node = node->left;
+		}
+		else if (node->left == NULL) {
+			node = node->right;
+		}
+		else {
+			flag = 1;
+			tmp = minKey(node->right);
+			node->key = tmp->key;
+			node->right = deleteItem(node->right, tmp->key);
+		}
+		if (node != NULL)
+			node = treeAVL(node);
+	}
+	return node;
+}
+void printTree(treeNode* node) {
+	if (node == NULL)
+		return;
+
+	printf("%d ", node->key);
+	printTree(node->left);
+	printTree(node->right);
+
+	return;
+}
+
+int main() {
+	int key;
+	char fx;
+	treeNode* root = NULL;
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			root = insertItem(NULL, root, key);
+			break;
+		case 'p':
+			printTree(root);
+			printf("\n");
+			break;
+		case 'd':
+			scanf("%d", &key);
+			getchar();
+			root = deleteItem(root, key);
+			flag = 0;
+			break;
+		case 's':
+			scanf("%d", &key);
+			getchar();
+			findElement(root, key);
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+	return 0;
+}
+
+
+
+

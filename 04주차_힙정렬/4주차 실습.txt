@@ -1,0 +1,96 @@
+//1번, 2번
+
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+int heap[101];
+int n = 0;
+
+void upHeap(int i) {
+	if (i == 1)
+		return;	
+	int index_c = i;	
+	int index_p = i / 2;
+	int tmp;
+
+	if (heap[index_p] < heap[index_c]) {	
+		tmp = heap[index_p];
+		heap[index_p] = heap[index_c];
+		heap[index_c] = tmp;	
+	}
+	upHeap(index_p);
+}
+void downHeap(int i) {
+	if (i*2 > n)		//자식이 있는지 없는지 확인 (1번 예외처리)
+		return;
+
+	int left, right,index_p,index_c;
+	index_p = i;
+	left = i * 2;
+	right = i * 2+1;
+	
+	if (right > n) index_c = left;	
+		//왼쪽 자식은 있어서 일단 1번 예외를 뚫었는데 오른쪽 자식이랑 비교해버리는 상황 방지(2번 예외처리)
+	else index_c = (heap[left] < heap[right]) ? right : left;
+
+	int tmp;
+	if (heap[index_p] < heap[index_c]) {
+		tmp = heap[index_p];
+		heap[index_p] = heap[index_c];
+		heap[index_c] = tmp;
+	}
+	downHeap(index_c);
+	
+}
+void insertItem(int key) {
+	heap[n + 1] = key;
+	upHeap(n + 1);
+	n++;
+}
+void printArray() {
+	for (int i = 1; i <= n; i++)
+		printf(" %d", heap[i]);
+	printf("\n");
+	return;
+}
+void rBuildHeap(int i) {
+	if (i > n)
+		return;
+	rBuildHeap(2 * i);
+	rBuildHeap(2 * i + 1);
+	downHeap(i);
+}
+void buildHeap() {
+	int i;
+	for (i = n / 2; i >= 1; i--)	
+		downHeap(i);
+}
+
+void inPlaceHeapSort() {
+	int tmp;
+	for (int i = n; i >= 2; i--) {
+		tmp = heap[1];
+		heap[1] = heap[i];
+		heap[i] = tmp;
+		n--;
+		downHeap(1);
+	}
+}
+int main() {
+	scanf("%d", &n);
+	for (int i = 1; i <= n; i++) {
+		scanf("%d", &heap[i]);
+	}
+
+	int N = n;
+	rBuildHeap(1);
+
+	inPlaceHeapSort();
+
+	n = N;
+
+	printArray();
+}
+
+
+

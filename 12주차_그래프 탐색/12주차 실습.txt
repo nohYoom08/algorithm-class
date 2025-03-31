@@ -1,0 +1,437 @@
+//1번 => 이건 어쩔 수 없이 포인터배열의 원소의 첫 노드에 해당 정점에 대한 정보를 넣어줘야 함.
+//즉 헤더는 graph->adjList[i]->link가 된다.
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct {
+	int* queue;
+	int front, rear;
+	int size;
+}Queue;
+
+typedef struct graphNode {
+	char vertex;
+	int visit;
+	int inEdges[MAX_VERTEX];
+	int outEdges[MAX_VERTEX];
+	int inDegree;
+	int outDegree;
+	struct graphNode* link;
+}graphNode;
+
+typedef struct Graph {
+	int n;
+	int m;
+	graphNode* adjList[MAX_VERTEX];
+}Graph;
+
+int topOrder[MAX_VERTEX+1];
+Queue* CreateQueue(int size) {
+	Queue* Q;
+	Q = (Queue*)malloc(sizeof(Queue));
+	Q->front = 0;
+	Q->rear = 0;
+	Q->size = size;
+	Q->queue = (int*)malloc(sizeof(int) * size);
+	for (int i = 0; i < Q->size; i++)
+		Q->queue[i] = 0;	//'초기화'
+	return Q;
+}
+int isEmpty(Queue* Q) {
+	if (Q->front == Q->rear)
+		return 1;
+	else
+		return 0;
+}
+int isFull(Queue* Q) {
+	if ((Q->rear + 1) % Q->size == Q->front)
+		return 1;
+	else
+		return 0;
+}
+void printQueue(Queue* Q) {
+	for (int i = 0; i < Q->size; i++)
+		printf(" %d", Q->queue[i]);
+	printf("\n");
+}
+int enQueue(Queue* Q, int data) {
+	if (isFull(Q) == 1) {
+		printf("overflow");
+		printQueue(Q);
+		return;
+	}
+	else {
+		Q->rear = (Q->rear + 1) % Q->size;
+		Q->queue[Q->rear] = data;
+	}
+}
+int deQueue(Queue* Q) {
+	if (isEmpty(Q) == 1) {
+		printf("underflow");
+		return;
+	}
+	else {
+		Q->front = (Q->front + 1) % Q->size;
+		int result = Q->queue[Q->front];
+		Q->queue[Q->front] = 0;
+		return result;
+	}
+}
+
+void initGraph(Graph* graph) {
+	for (int i = 0; i < graph->n; i++)
+		graph->adjList[i] = (graphNode*)malloc(sizeof(graphNode));
+}
+graphNode* getNode() {
+	graphNode* new = (graphNode*)malloc(sizeof(graphNode));
+	new->link = NULL;
+
+	return new;
+}
+void insertVertex(Graph* graph, char vertex, int index) {
+	graphNode* tmp = graph->adjList[index];	//tmp에 해당 정점 연결
+	tmp->vertex = vertex;
+	for (int i = 0; i < graph->n; i++) {
+		tmp->inEdges[i] = 0;
+		tmp->outEdges[i] = 0;
+	}
+	tmp->inDegree = 0;
+	tmp->outDegree = 0;
+	return;
+}
+int getIndex(Graph* graph, char vertex) {
+	//printf("getIndex start!\n");
+	for (int i = 0; i < graph->n; i++) {
+		if (graph->adjList[i]->vertex == vertex){
+			//printf("getIndex success!\n");
+			return i;
+		}
+	}
+
+	return -1;
+}
+void insertDirectedEdge(Graph* graph, char vertex1, char vertex2) {
+	//결국 삽입함수를 따로 만드는 게 베스트인 것 같다
+	int index1 = getIndex(graph, vertex1);
+	int index2 = getIndex(graph, vertex2);
+	//printf("getIndexes success!\n");
+
+	graphNode* new = getNode();
+	new->vertex = vertex2;
+	for (int i = 0; i < graph->n; i++) {
+		new->inEdges[i] = graph->adjList[index2]->inEdges[i];
+		new->outEdges[i] = graph->adjList[index2]->outEdges[i];
+	}
+	new->inDegree = graph->adjList[index2]->inDegree;
+
+	graphNode* tmp = graph->adjList[index1]->link;
+
+	if (tmp == NULL) {
+		graph->adjList[index1]->link = new;
+	}
+	graph->adjList[index1]->link = new;
+	new->link = tmp;
+
+	tmp = graph->adjList[index1]; //시점 대입
+	tmp->outEdges[tmp->outDegree++] = index2;
+
+	tmp = graph->adjList[index2];	//종점 대입
+	tmp->inEdges[tmp->inDegree++] = index1;
+
+	return;
+}
+void buildGraph(Graph* graph) {
+	
+	scanf("%d", &graph->n);
+	getchar();
+
+	initGraph(graph);
+	
+	char tmp_vertex;
+	for (int i = 0; i < graph->n; i++) {
+		scanf("%c", &tmp_vertex);
+		getchar();
+		insertVertex(graph, tmp_vertex, i);
+	}
+
+	scanf("%d", &graph->m);
+	getchar();
+
+	char vertex1, vertex2;
+	for (int i = 0; i < graph->m; i++) {
+		scanf("%c %c", &vertex1, &vertex2);
+		getchar();
+		insertDirectedEdge(graph, vertex1, vertex2);
+	}
+
+	return;
+}
+void printEdges(Graph* graph, int num) {
+	if (num > graph->n || num < 1) {
+		printf("-1\n");
+		return;
+	}
+
+	int index = num - 1;
+	graphNode* tmp = graph->adjList[index];
+
+	printf("%d : ", num);
+	while (tmp != NULL) {
+		printf("%d ", tmp->vertex);
+		tmp = tmp->link;
+	}
+	printf("\n");
+	return;
+}
+
+
+
+
+void topolocialSort(Graph*graph) {
+	Queue* Q=CreateQueue(MAX_VERTEX);
+	int in[MAX_VERTEX] = { 0 };
+	int index1, index2, t;
+
+	for (int i = 0; i < graph->n; i++) {
+		in[i] = graph->adjList[i]->inDegree;
+		//printf("in[%d] = %d\n", i,in[i]);
+		if (in[i] == 0) {
+			enQueue(Q, i);
+			//printf("i=%d\n", i);
+		}
+	}
+
+	t = 1;
+
+	while (!isEmpty(Q)) {
+		index1 = deQueue(Q);
+		//printf("index1 = %d\n", index1);
+		topOrder[t] = index1;
+		t++;
+
+		for(int i=graph->adjList[index1]->outDegree-1; i>=0; i--){
+			//printf("outEgdes = %d\n", i);
+			index2 = graph->adjList[index1]->outEdges[i];
+			in[index2]--;
+			if (in[index2] == 0)
+				enQueue(Q, index2);
+		}
+	}
+
+	if (t <= graph->n)
+		topOrder[0] = 0;
+	else
+		topOrder[0] = 1;
+
+
+	return;
+}
+
+
+
+
+int main() {
+	Graph* graph = (Graph*)malloc(sizeof(Graph));
+
+	buildGraph(graph);
+
+	topolocialSort(graph);
+
+	if (!topOrder[0]) 
+		printf("0");
+	else
+		for (int i = 1; i <= graph->n; i++) 
+			printf("%c ", graph->adjList[topOrder[i]]->vertex);
+	return 0;
+}
+
+
+//1번 인접배열로 해봄 (가장 나중에 추가한 간선을 맨 앞에 삽입하는 건 구현X, 단순 오름차순)
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct {
+	int* queue;
+	int front, rear;
+	int size;
+}Queue;
+
+
+typedef struct Graph {
+	char name;
+	int inEdges[MAX_VERTEX];
+	int outEdges[MAX_VERTEX];
+	int inDegree;
+}Graph;
+
+int n;
+int m;
+Graph graph[MAX_VERTEX];
+int topOrder[MAX_VERTEX+1];
+Queue* CreateQueue(int size) {
+	Queue* Q;
+	Q = (Queue*)malloc(sizeof(Queue));
+	Q->front = 0;
+	Q->rear = 0;
+	Q->size = size;
+	Q->queue = (int*)malloc(sizeof(int) * size);
+	for (int i = 0; i < Q->size; i++)
+		Q->queue[i] = 0;	//'초기화'
+	return Q;
+}
+int isEmpty(Queue* Q) {
+	if (Q->front == Q->rear)
+		return 1;
+	else
+		return 0;
+}
+int isFull(Queue* Q) {
+	if ((Q->rear + 1) % Q->size == Q->front)
+		return 1;
+	else
+		return 0;
+}
+void printQueue(Queue* Q) {
+	for (int i = 0; i < Q->size; i++)
+		printf(" %d", Q->queue[i]);
+	printf("\n");
+}
+int enQueue(Queue* Q, int data) {
+	if (isFull(Q) == 1) {
+		printf("overflow");
+		printQueue(Q);
+		return;
+	}
+	else {
+		Q->rear = (Q->rear + 1) % Q->size;
+		Q->queue[Q->rear] = data;
+	}
+}
+int deQueue(Queue* Q) {
+	if (isEmpty(Q) == 1) {
+		printf("underflow");
+		return;
+	}
+	else {
+		Q->front = (Q->front + 1) % Q->size;
+		int result = Q->queue[Q->front];
+		Q->queue[Q->front] = 0;
+		return result;
+	}
+}
+
+void insertVertex(int index, char name) {
+	graph[index].name = name;
+
+	for (int i = 0; i < n; i++)
+		graph[index].inEdges[i] = graph[index].outEdges[i] = 0;
+
+	graph[index].inDegree = 0;
+
+	return;
+}
+
+int findIndex(char name) {
+	for (int i = 0; i < n; i++) 
+		if (graph[i].name == name)
+			return i;
+	return -1;
+}
+void insertDirectedEdge(char vertex1, char vertex2) {
+	int flag = 0;
+	int index1 = findIndex(vertex1);
+	int index2 = findIndex(vertex2);
+	if (index1 == -1 || index2 == -1)
+		return;
+
+	graph[index1].outEdges[index2] = 1;
+
+	graph[index2].inEdges[index1] = 1;
+	graph[index2].inDegree++;
+
+	return;
+}
+
+void buildGraph() {
+	char name, vertex1, vertex2;
+	scanf("%d", &n);
+	getchar();
+
+	for (int i = 0; i < n; i++) {
+		scanf("%c", &name);
+		getchar();
+		insertVertex(i, name);
+	}
+
+	scanf("%d", &m);
+	getchar();
+
+	for (int i = 0; i < m; i++) {
+		scanf("%c %c", &vertex1, &vertex2);
+		getchar();
+		insertDirectedEdge(vertex1, vertex2);
+	}
+
+	return;
+}
+
+void topolocialSort() {
+	Queue* Q=CreateQueue(MAX_VERTEX);
+	int in[MAX_VERTEX] = { 0 };
+	int index1, index2, t;
+
+	for (int i = 0; i < n; i++) {
+		in[i] = graph[i].inDegree;
+		printf("in[%d] = %d\n", i,in[i]);
+		if (in[i] == 0) {
+			enQueue(Q, i);
+			printf("i=%d\n", i);
+		}
+	}
+
+	t = 1;
+
+	while (!isEmpty(Q)) {
+		index1 = deQueue(Q);
+		printf("index1 = %d\n", index1);
+		topOrder[t] = index1;
+		t++;
+
+		for (int i = 0; i < m; i++) {
+			if (graph[index1].outEdges[i] == 1) {
+				printf("outEgdes = %d\n", i);
+				index2 = i;
+				in[index2]--;
+				if (in[index2] == 0)
+					enQueue(Q,index2);
+			}
+		}
+	}
+
+	if (t <= n)
+		topOrder[0] = 0;
+	else
+		topOrder[0] = 1;
+
+
+	return;
+}
+
+
+int main() {
+
+	buildGraph();
+
+	topolocialSort();
+
+	if (!topOrder[0]) 
+		printf("0");
+	else
+		for (int i = 1; i <= n; i++) 
+			printf("%c ", graph[topOrder[i]].name);
+	return 0;
+}

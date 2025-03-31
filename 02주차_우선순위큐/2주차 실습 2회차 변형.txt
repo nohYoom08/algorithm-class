@@ -1,0 +1,74 @@
+//1번 제자리 선택정렬(최솟값, 정순)
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(){
+	int* arr, N, min, min_j,tmp;
+	scanf("%d", &N);
+	arr = (int*)malloc(sizeof(int) * N);
+
+	for (int i = 0; i < N; i++) 
+		scanf("%d", &arr[i]);
+	
+	
+	for (int i = 0; i < N - 1; i++) {
+		min = arr[i];	
+		min_j = i + 1;	
+		//매 순간 초기화 필요
+		//(1학년 때는 j항에서 최솟값을 찾는 게 아닌 
+		// 작은 거 발견될때마다 교환해서 초기화가 필요 없었음)
+
+		for (int j = i + 1; j < N; j++) {
+			if (min > arr[j]) {
+				min = arr[j];
+				min_j = j;
+			}
+		}
+		if (arr[i] > min) {
+			tmp = arr[min_j];
+			arr[min_j] = arr[i];
+			arr[i] = tmp;
+		}
+		
+	}
+
+	for (int i = 0; i < N; i++)
+		printf("%d ", arr[i]);
+
+	return 0;
+}
+
+
+//2번 
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(){
+	int* arr, N, tmp_i;
+	scanf("%d", &N);
+	arr = (int*)malloc(sizeof(int) * N);
+
+	for (int i = 0; i < N; i++) 
+		scanf("%d", &arr[i]);
+	
+	
+	for (int i = 1; i < N; i++) {
+		tmp_i = arr[i];		//i항값 저장
+		int j = i - 1;		//j항은 i항 직전 값부터
+		while (j >= 0 && arr[j] > tmp_i) { //크기비교하는 원소의 변수를 i로 넣는 실수하지 말 것
+			arr[j + 1] = arr[j];	
+				//어 이러면 i항값은 사라지잖아
+				// => 걱정 할 필요 없음 중간에 멈추거나 0항까지 가거나 어떻게든 자리는 바뀜
+			j--;
+		}
+		arr[j + 1] = tmp_i;	//교환 필없.
+	}
+
+	for (int i = 0; i < N; i++)
+		printf("%d ", arr[i]);
+
+	return 0;
+}
+

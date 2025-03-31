@@ -1,0 +1,221 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+#define INF 20*1000
+
+int graph[MAX_VERTEX][MAX_VERTEX] = { 0 };
+int visited[MAX_VERTEX] = { 0 };
+int n, m, s;
+
+int dist[MAX_VERTEX] = { 0 };	//시작 정점으로 부터 다른 정점들 사이의 거리를 저장할 배열
+
+int choose()	//최소 거리인 정점 반환 (dist배열에 대한 우선순위 큐)
+{
+	int min;
+	int min_index = -1;
+	min = INF;	//무한대로 일단 초기화
+	for (int i = 0; i < n; i++)
+	{
+		if (dist[i] < min && visited[i] == 0)
+		{
+			min = dist[i];
+			min_index = i;
+		}
+	}
+
+	return min_index;
+}
+
+void insertEdge(int vertex1, int vertex2, int weight)
+{
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	graph[index1][index2] = weight;
+}
+
+void initGraph()
+{
+	for (int i = 0; i < n; i++)	//이차원 배열 순회
+	{
+		for (int j = 0; j < n; j++)
+		{
+			if (i == j)	//자기 자신한테 해당하는 부분은 거리 0
+				graph[i][j] = 0;
+			else	//나머지는 전부 무한대로 초기화
+				graph[i][j] = INF;
+		}
+	}
+}
+
+//그래프를 순회하면서 부착 간선들을 리스트에 삽입
+void Dijkstra(int start_vertex)	
+{
+	int start_index = start_vertex - 1; //시작 정점 설정
+	for (int i = 0; i < n; i++)	
+		//우선 나머지 정점들과의 거리를 초기화 (인접한 정점들만)
+		//간선으로 연결되어있지 않은 정점들은 그대로 무한대인 INF값 유지
+		dist[i] = graph[start_index][i];
+	dist[start_index] = 0;	//자기 자신 정점은 거리 0으로 초기화
+
+	for (int i = 0; i < n - 1; i++)
+	{
+		int u = choose();	//거리가 최소인 인접정점 반환 및 이동
+		visited[u] = 1;	//방문처리
+
+		for (int j = 0; j < n; j++)
+		{
+			if (visited[j] == 0)
+				//거리 완화 시작, visited==0은 이미 지나온 경로 조사를 다시 안 하는 것
+				//(후퇴 없음. 간선우선순위리스트에서 뽑아서 가는 거니까)
+			{
+				if (dist[u] + graph[u][j] < dist[j])
+					//시작점에서 u까지 거리 + u에서 j까지에 거리 < 시작점에서 j까지 거리
+					//참이면 거리완화
+					dist[j] = dist[u] + graph[u][j];
+			}
+		}
+	}
+
+}
+void buildGraph()
+{
+	int vertex1, vertex2, weight;
+	scanf("%d %d %d", &n, &m, &s);
+	initGraph();
+
+	for (int i = 0; i < m; i++)
+	{
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		insertEdge(vertex1, vertex2, weight);
+		insertEdge(vertex2, vertex1, weight);
+	}
+}
+int main()
+{
+	buildGraph();
+	Dijkstra(s);
+
+	for (int i = 0; i < n; i++)
+	{
+		if ((i + 1) != s && dist[i] != INF)
+			printf("%d %d\n", i + 1, dist[i]);
+	}
+
+	return 0;
+}
+
+
+
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+#define INF 20*1000
+
+typedef struct Edge {	//간선리스트 구조체
+	int start;
+	int end;
+	int weight;
+}Edge;
+
+int graph[MAX_VERTEX][MAX_VERTEX] = { 0 };
+int n, m, s;
+int dist[MAX_VERTEX] = { 0 };
+int cnt_edges = 0;
+Edge edges[MAX_VERTEX];
+
+void insertEdge(int vertex1, int vertex2, int weight)
+{
+	edges[cnt_edges].start = vertex1;
+	edges[cnt_edges].end = vertex2;
+	edges[cnt_edges].weight = weight;
+
+	cnt_edges++;
+}
+
+void initGraph()
+{
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < n; j++)
+		{
+			if (i == j)	//자기 자신한테 해당하는 부분은 거리 0
+				graph[i][j] = 0;
+			else	//나머지는 모두 무한대로 초기화
+				graph[i][j] = INF;
+		}
+	}
+}
+
+//모든 간선들을 우선 간선리스트에 넣고 그래프 순회 시작
+void BellmanFord(int start_vertex)
+{
+	int u, v, w;
+	int start_index = start_vertex - 1;
+
+	for (int i = 0; i < n; i++)
+		dist[i] = INF;	//시작점과 각 정점들 사이의 거리들 일단 전부 무한대로 초기화
+	dist[start_index] = 0;
+	//자기 자신은 0으로 초기화
+
+	for (int i = 0; i < n - 1; i++)
+		//시작정점을 제외한 정점들의 수 만큼의 시행이기 때문에 n-1번 수행
+	{
+		for (int j = 0; j < cnt_edges; j++)	
+			//모든 간선들에 대해서 매번 조사 (이거 때문에 딱히 정렬 필요 없음)
+		{
+			u = edges[j].start - 1;
+			v = edges[j].end - 1;
+			w = edges[j].weight;
+			if (dist[u] != INF && dist[u] + w < dist[v])
+				//아직 거리가 첫 업데이트가 되지 않은 경우(시작점과 연결되기 전) &&
+				//(시작점에서 u까지 최소거리) + (u에서 v까지의 거리) < (시작점에서 v까지의 거리)
+				dist[v] = dist[u] + w;
+		}
+	}
+
+	for (int i = 0; i < cnt_edges; i++)
+		//모든 루프를 끝냈는데
+	{
+		u = edges[i].start - 1;
+		v = edges[i].end - 1;
+		w = edges[i].weight;
+		if (dist[u] != INF && dist[u] + w < dist[v])
+			//한번 돌려봤을 때 한번 더 작아진다? -> 음의 사이클
+			//왜냐면 w가 양수라면 더 작아질 수가 없고, 사이클이 아닌 음의 간선들은 이미 한번씩 다 지났기 때문에
+			//다음과 같은 조건문에 들어갈 수 없는 거임
+			printf("There is a negative cycle!");
+	}
+}
+
+void buildGraph()
+{
+	int vertex1, vertex2, weight;
+	scanf("%d %d %d", &n, &m, &s);
+	initGraph();
+
+	for (int i = 0; i < m; i++)
+	{
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		insertEdge(vertex1, vertex2, weight);
+	}
+}
+int main()
+{
+	buildGraph();
+	BellmanFord(s);
+
+	for (int i = 0; i < n; i++)
+	{
+		if ((i + 1) != s && dist[i] != INF)
+			printf("%d %d\n", i + 1, dist[i]);
+	}
+
+	return 0;
+}

@@ -1,0 +1,134 @@
+#pragma warning(disable:4996)
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+typedef struct treeNode {
+	struct treeNode* parent, * lChild, * rChild;
+	int key;
+}treeNode;
+
+treeNode* getNode() {
+	treeNode* new = (treeNode*)malloc(sizeof(treeNode));
+	new->parent = new->lChild = new->rChild = NULL;
+
+	return new;
+}
+
+//트리의 함수 내에서 노드는 무조건 node로 통일. root는 main에서 생각
+treeNode* treeSearch(treeNode* node, int key) {
+	if (node==NULL) {
+		return node;
+	}
+
+	if (node->key == key) {
+		return node;
+	}
+	else if (node->key > key) {
+		//if (node->lChild == NULL)
+		//	return node;
+		//마지막 탐색을 NULL이 아닌 외부노드로 끝낼거면
+		//이렇게 다음 삽입할 공간(왼쪽 오른쪽 여부 + NULL)에 대한 조건문 처리 필수
+
+		return treeSearch(node->lChild, key);
+		//찾자마자 return되며 상위 재귀함수들 바로 끝남
+	}
+	else if (node->key < key) {
+//		if (node->rChild == NULL)
+//			return node;
+
+		return treeSearch(node->rChild, key);
+	}
+}
+
+void insertItem(treeNode** node, int key) {
+	//이중 포인터 활용해보자
+	treeNode* new = getNode();
+	new->key = key;
+
+	if (*node == NULL) {
+		*node = new;
+		//node = new; 이렇게 하면 안 됨 node는 함수 안에서 쓰이고 사라짐
+		//getNode()는 리턴한 주소값을 외부에 할당하고 할당된 변수는 그 외부에서만 쓰임
+		//tmp->value는 그 주소를 받아서 value가 있는 공간을 
+		//getNode()하면서 사라졌던 new와 공유했던 것일 뿐 결국 new는 사라졌음
+		printf("root start! / %p\n", node);
+		return;
+	}
+
+	treeNode* tmp = treeSearch(*node, key);
+	printf("tmp key = %d\n", tmp->key);
+	if (!isExternal(tmp)) {
+		return;
+	}
+
+	if (tmp->key > key) {
+		tmp->lChild = new;
+		printf("lChild insert!\n");
+	}
+	else if (tmp->key < key) {
+		tmp->rChild = new;
+		printf("rChild insert!\n");
+	}
+
+	return;
+}
+
+treeNode* inOrderSucc(treeNode* node);
+void removeElement(treeNode* node, int key);
+
+
+
+void printTree(treeNode* node) {
+	if (node == NULL)
+		return;
+
+	printf("%d ", node->key);
+	printTree(node->lChild);
+	printTree(node->rChild);
+}
+void main() {
+	int key;
+	char fx;
+	treeNode* root, * s;	//tree는 root노드에 NULL로 설정하고 시작
+	root = s = NULL;
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			printf("%p\n", root);
+			insertItem(&root, key);
+			break;
+			//case 'd':
+			//	removeElement(root, key);
+			//	break;
+		case 's':
+			scanf("%d", &key);
+			getchar();
+			s = findElement(root, key);
+			if (s->key == key)
+				printf("%d\n", key);
+			else
+				printf("X\n");
+			break;
+		case 'p':
+			printTree(root);
+			printf("\n");
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+}
+//외부에 아무 key를 가지고 있지않은 임시 노드를 만들어 놓을 것인가
+//안 만들고 단순히 NULL끝까지 조사할 것인가
+
+//조사한다면 Insert함수도 재귀를 할 것인가
+//Insert재귀를 안 할거라면 insert에 search하는 while문을 추가로 쓸 것인가

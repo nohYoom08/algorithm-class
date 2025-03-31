@@ -1,0 +1,232 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+int heap[101];
+int n = 0;
+
+
+void upHeap(int i) {
+	if (i == 1)
+		return;	//재귀의 기본. 종료조건(참고로 0이 아니라 1!!)
+	int index_c = i;	//인덱스 헷갈리지 마라
+	int index_p = i/2;
+	int tmp;
+
+	if (heap[index_p] < heap[index_c]) {	//최대힙이니까 자식이 더 크면 안 된다
+		tmp = heap[index_p];
+		heap[index_p] = heap[index_c];
+		heap[index_c] = tmp;
+		upHeap(index_p);	//어차피 재귀를 쓸건데 반복문을 또 왜 쓰냐. 업힙은 이렇게 하는거다
+	}
+}
+void downHeap(int i) {
+	if (i >= n)
+		return;	//n이 같을 때도 포함. 비교할 부모가 끝항이면 비교자체가 끝인거지
+	int index_p = i;
+	int index_c = ((i*2+1<=n)?((heap[i * 2] > heap[i * 2 + 1]) ? i * 2 : i * 2 + 1):i*2);
+			//배열한정 자식 조사할 때 자식이 n을 넘어가는지도 확인 (즉, i*2+1가 n일 때는 해당됨)
+			// + 다운힙의 기본 알고리즘(왼쪽 or 오른쪽 선택하는)
+
+/*int left = i*2, right = i*2+1;	//index_p할 필요 없이 그냥 i그대로 갖다써도 된다 
+    if (left > n) return;
+
+    int key = left;
+    if (H[key] < H[right]) key = right;
+*/
+	int tmp;
+	if (heap[index_p] < heap[index_c]) {
+		tmp = heap[index_p];
+		heap[index_p] = heap[index_c];
+		heap[index_c] = tmp;
+		downHeap(index_c);	//자식 인덱스가 부모가 되는거면 자식이 인자로 가야지 그 다음 자식인덱스를 인자로 넣으면 어떡하니
+	}
+	
+}
+void printHeap() {
+	for (int i = 1; i <= n; i++)
+		printf(" %d", heap[i]);
+	printf("\n");
+	return;
+}
+void insertItem(int key) {
+	heap[n+1] = key;
+	upHeap(n+1);
+	n++;
+}
+int removeMax() {
+	if (n == 0)
+		return;
+
+	int key = heap[1];
+	heap[1] = heap[n];
+	downHeap(1);
+	n--;
+	return key;
+}
+int main() {
+	char fx;
+	int key,remove_key;
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'q') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			insertItem(key);
+			printf("0\n");
+			break;
+		case 'd':
+			printf("%d\n",removeMax());
+			break;
+		case 'p':
+			printHeap();
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+	}
+}
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+int heap[101];
+int n = 0;
+
+
+void downHeap(int i) {
+	if (i >= n)
+		return;
+	int index_p = i;
+	int index_c = ((i*2+1<=n)?((heap[i * 2] > heap[i * 2 + 1]) ? i * 2 : i * 2 + 1):i*2);
+		//배열한정 자식 조사할 때 자식이 n을 넘어가는지도 확인 (즉, i*2+1가 n일 때는 해당됨)
+	int tmp;
+	if (heap[index_p] < heap[index_c]) {
+		tmp = heap[index_p];
+		heap[index_p] = heap[index_c];
+		heap[index_c] = tmp;
+		downHeap(index_c);
+	}
+	
+}
+void printHeap() {
+	for (int i = 1; i <= n; i++)
+		printf(" %d", heap[i]);
+	printf("\n");
+	return;
+}
+void rBuildHeap(int i) {
+	if (i > n)
+		return;
+	rBuildHeap(2 * i);
+	rBuildHeap(2 * i + 1);
+	downHeap(i);
+}
+void Buildheap() {
+	int i;
+	for (i = n / 2; i >= 1; i--)	//자식노드는 딱히 조사할 필요 없으니 i에다가 n/2
+		downHeap(i);
+}
+
+int main() {
+	scanf("%d", &n);
+	for (int i = 1; i <= n; i++)
+		scanf("%d", &heap[i]);
+
+	rBuildHeap(1);
+
+	for (int i = 1; i <= n; i++)
+		printf("%d ", heap[i]);
+}
+
+
+
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+int Heap[101];
+int n = 0;
+void upheap(int index) {
+	int tmp;
+	int child = index, parent = index/2;	//parent는 나누기다
+	if (index <= 1) {	//등호 추가
+		return;
+	}
+	if (Heap[child] > Heap[parent]) {
+		tmp = Heap[child];
+		Heap[child] = Heap[parent];
+		Heap[parent] = tmp;
+	}
+	upheap(parent);
+}
+void insertItem(int key) {
+	n++;	//1추가하고 원소 넣기(삭제랑 반대)
+	Heap[n] = key;
+	upheap(n);
+}
+void downheap(int index) {
+	if (index >= n)
+		return;
+	int parent, left, right, child,tmp;
+	parent = index;
+	child = left = 2 * index;	//그냥 child까지 싹다 만들어놓고 하자(for 가독성)
+	right = 2 * index + 1;
+
+	if (left > n)	//왼쪽 자식이 없는경우(자식이 없는 경우)
+		return;
+	else if (right <= n)	//오른쪽 자식도 있는 경우
+		child = (Heap[left] > Heap[right]) ? left : right;
+	//원소비교인지 인덱스비교인지 코딩할 때 실수 주의
+	//없으면 그냥 child = left
+	
+
+	if (Heap[parent] < Heap[child]) {
+		tmp = Heap[parent];
+		Heap[parent] = Heap[child];
+		Heap[child] = tmp;
+	}
+
+	downheap(child);
+}
+int removeItem() {
+	int tmp = Heap[1];	//삭제는 끝항이 아닌 첫 항을 주로 다룸(헷갈 ㄴ)
+	Heap[1] = Heap[n];	//원소 지우고 1 삭제 (삽입이랑 반대)
+	n--;
+	downheap(1);
+	return tmp;
+}
+void printHeap() {
+	for (int i = 1; i <= n; i++)
+		printf("%d ", Heap[i]);
+	printf("\n");
+}
+void rBuildHeap(int index) {
+	if (index >= n)
+		return;
+	rBuildHeap(2 * index);
+	rBuildHeap(2 * index + 1);
+	downheap(index);
+}
+void BuildHeap(int index) {	
+//상향식 힙정렬은 루프문으로 할 때 그냥 맨 끝항의 부모노드부터 root항까지 downheap하면 됨
+	for (int i = n / 2; i >= 1; i--)
+		downheap(i);
+}
+int main() {
+	scanf("%d", &n);
+	for (int i = 1; i <= n; i++) 
+		scanf("%d", &Heap[i]);
+	BuildHeap(1);
+	printHeap();
+	return 0;
+}
+
+

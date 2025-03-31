@@ -1,0 +1,273 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct nodeList {
+	struct nodeList* link;
+	int key;
+}nodeList;
+typedef struct L1L2 {
+	nodeList* L1;
+	nodeList* L2;
+}L1L2;
+nodeList* getNode(){
+	nodeList* new = (nodeList*)malloc(sizeof(nodeList));
+	new->link = NULL;
+	return new;
+}
+void addList(nodeList** L,int key) {
+	nodeList* tmp = *L;
+	nodeList* new = getNode();
+	new->key = key;
+
+	if (*L == NULL) {
+		*L = new;	
+		return;	
+		//예외를 띄웠으면 당연히 return해야지
+		//(안해서 계속 루프 돌고 있었음)
+	}
+
+	while (tmp->link != NULL) {
+		tmp = tmp->link;
+	}
+	
+	tmp->link = new;
+	return;
+}
+L1L2* mgPartition(nodeList** L, int k) {	
+	L1L2* tmp_l1l2 = (L1L2*)malloc(sizeof(L1L2));
+
+	if ((*L)->link == NULL) {		//*L= L->head
+		return NULL;
+	}
+
+	nodeList* tmp;
+	int cnt = 1;
+
+	tmp = *L;
+	while (cnt < k && tmp->link!=NULL) {	//현재 개수에서 cnt를 k까지 갖고가줌
+		//tmp->link!=NULL => cnt=1부터
+		//tmp!=NULL => cnt=0부터
+		tmp = tmp->link;
+		cnt++;
+	}
+	
+	tmp_l1l2->L1 = *L;
+	tmp_l1l2->L2 = tmp->link;
+	tmp->link = NULL;	//분할 했으면 첫 번째 구간의 마지막 노드 link는 당연히 NULL
+	return tmp_l1l2;
+}
+nodeList* merge(nodeList** L1, nodeList** L2) {
+	//A의 값을 바꾸고 싶으면 A의 주소를 전달하라(기본)
+	//so int *p = &A일 때 p를 함수인자로 전달하면 
+	// A의 주소가 전달된 것이므로 A값 변경 가능
+
+	nodeList* L3 = NULL;	
+	//헤더포인터 안 쓰는거면 함수인자로 쓰는거 빼고는 무조건 일중포인터!!
+	//이중포인터로 헤더 선언하면 안 됨
+	nodeList* tmp1, * tmp2, *tmp3;
+	tmp1 = *L1;
+	tmp2 = *L2;
+
+	if (tmp1->key <= tmp2->key) {
+		L3 = *L1;
+		//포인터로 tmp활용하다가
+		/*
+		tmp=*L
+		tmp=*L2 => 이런 실수 주의
+
+		tmp=a
+		tmp=b => 이런다고 a값이 안 바뀌는 당연한 거임.
+		주소값 변경(다른 노드에 연결)이 가능한건 오직 tmp->link일 때만!!
+		이동할 때 tmp=tmp->link하는거 + tmp를 최대한 쓰려는 습관때문에
+		최초 링크 연결할 때 이런 실수하는 거 주의
+		*/
+		tmp1 = tmp1->link;
+	}
+	else {
+		L3 = *L2;
+		tmp2 = tmp2->link;
+	}
+	tmp3 = L3;
+	while (tmp1 != NULL && tmp2 != NULL) {
+		if (tmp1->key <= tmp2->key) {
+			tmp3->link = tmp1;
+			tmp1 = tmp1->link;
+		}
+		else if(tmp1->key > tmp2->key){
+			tmp3->link = tmp2;
+			tmp2 = tmp2->link;
+		}
+		else {
+			tmp3->link = tmp1;
+			tmp1 = tmp1->link;
+			tmp2 = tmp2->link;
+		}
+		tmp3 = tmp3->link;
+	}
+	while (tmp1 != NULL) {
+		tmp3->link = tmp1;
+		tmp3 = tmp3->link;
+		tmp1 = tmp1->link;
+	}
+	while (tmp2 != NULL) {
+		tmp3->link = tmp2;
+		tmp3 = tmp3->link;
+		tmp2 = tmp2->link;
+	}
+	nodeList* tmp = L3;
+	while (tmp != NULL) {
+		tmp = tmp->link;
+	}
+	return L3;
+}
+
+nodeList* mergeSort(nodeList** L) {
+	if ((*L)->link == NULL) {
+		return *L;
+	}
+	nodeList* tmp, * L1, * L2;
+	L1L2* tmp_l1l2;
+	tmp = *L;
+	int k = 0;
+
+	while (tmp != NULL) {
+		tmp = tmp->link;
+		k++;
+	}
+	k = k / 2;
+	tmp_l1l2 = mgPartition(L, k);
+	L1 = tmp_l1l2->L1;
+	L2 = tmp_l1l2->L2;
+
+	L1 = mergeSort(&L1);	
+	L2 = mergeSort(&L2);
+	//H = mergeSort(&H)는 H가 Sort된 것이다.
+	//인자는 이중포인터로서 &H가 들어가는거 실수하지마라
+	return merge(&L1, &L2);
+}
+
+void printList(nodeList** L) {
+	nodeList* tmp = *L;
+	while (tmp != NULL) {
+		printf("%d ", tmp->key);
+		tmp = tmp->link;
+	}
+	printf("\n");
+	return;
+}
+int main() {
+	int N,key;
+	nodeList* L = NULL;	
+	//이중포인터 쓰는거면 널로 초기화
+	//안 그러면 초기조건인 if(*L==NULL)에 안 들어감. 
+	// *L에 공간이 할당되어있기 때문 
+	// (헤더포인터 쓸 때는 head안의 link는 NULL이었기에 가능)
+	
+	//새로운 리스트를 선언할 때는 무조건 일중포인터다..!
+	//(L1L2 구조체에서 실수 주의)
+	scanf("%d", &N);
+	for (int i = 0; i < N; i++) {
+		scanf("%d", &key);
+		addList(&L, key);
+	}
+	L = mergeSort(&L);	
+	//반환받는 건 값으로 받아도 된다..! 
+	//인자로 넣을 때만 주소로 신경써서 조심
+	printList(&L);	//이런거 조심
+	return 0;
+}
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+int getPivot(int left,int right) {
+	srand((unsigned)(time(NULL)));
+	int x[3];
+	for (int i = 0; i < 3; i++) 
+		x[i] = left + rand()%(right-left+1);	//랜덤 범위
+	
+	int tmp;
+	for (int i = 0; i < 3; i++) {
+		for (int j = i; j < 3; j++) {
+			if (x[i] < x[j]) {
+				tmp = x[i];
+				x[i] = x[j];
+				x[j] = tmp;
+			}
+		}
+	}
+	return x[1];
+}
+int* inPlacePartition(int arr[], int left, int right, int p) {
+	int tmp, pivot;
+	pivot = arr[p];
+
+	tmp = arr[right];
+	arr[right] = arr[p];
+	arr[p] = tmp;
+
+	int i, j;
+	i = left;
+	j = right - 1;	//j=right가 아니라 right-1
+	while (i <= j) {
+		while (i <= j && arr[i] <= pivot) {
+			i++;
+		}
+		while (i <= j && arr[j] >= pivot) {
+			j--;
+		}
+		if (i < j) {
+			tmp = arr[i];
+			arr[i] = arr[j];
+			arr[j] = tmp;
+		}
+	}
+	tmp = arr[i];	//교환할 때 변수 잘못쓰는 거 주의하고
+	arr[i] = arr[right];
+	arr[right] = tmp;
+
+	return i;
+}
+void inPlaceQuickSort(int arr[], int left, int right) {
+	if (left >= right) {
+		return;
+	}
+
+	int p = getPivot(left, right);
+	
+	int i = inPlacePartition(arr, left, right, p);
+	//partition을 여기선 일단 동강내는걸로 생각. 재귀 과정이 헷갈리지 않도록
+
+	int a, b, pivot;
+	pivot = arr[i];
+	a = b = i;
+	while (arr[a] == pivot)
+		a--;
+	while (arr[b] == pivot)
+		b++;
+	a++;
+	b--;	//일단 문제의 a-1, b+1에 연산
+
+	inPlaceQuickSort(arr, left, a-1);
+	inPlaceQuickSort(arr, b+1, right);
+}
+int main() {
+	int N,*arr;
+	scanf("%d", &N);
+	arr = (int*)malloc(sizeof(int) * N);
+	for (int i = 0; i < N; i++) 
+		scanf("%d", &arr[i]);
+
+	inPlaceQuickSort(arr, 0, N - 1);
+	
+	for (int i = 0; i < N; i++) 
+		printf("%d ", arr[i]);
+
+	return 0;
+}
+
+

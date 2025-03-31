@@ -1,0 +1,387 @@
+//1번 - 초기화 똑바로 해보고 다음에는 헤더구조체 배열을 구조체에 만들어보자
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct graphNode {
+	int vertex;
+	int weight;
+	int visit;
+	struct graphNode* link;
+}graphNode;
+
+typedef struct Graph {
+	int n;
+	int m;
+	graphNode* adjList[MAX_VERTEX];
+}Graph;
+
+graphNode* Heap[MAX_VERTEX];
+int N = 0;
+void upheap(int index) {
+	graphNode* tmp;
+	int child = index, parent = index / 2;	//parent는 나누기다
+	if (index <= 1) {	//등호 추가
+		return;
+	}
+	if (Heap[child]->weight < Heap[parent]->weight) {
+		tmp = Heap[child];
+		Heap[child] = Heap[parent];
+		Heap[parent] = tmp;
+	}
+	upheap(parent);
+}
+void insertItem(graphNode* key) {
+	N++;	//1추가하고 원소 넣기(삭제랑 반대)
+	Heap[N] = key;
+	upheap(N);
+}
+void downheap(int index) {
+	if (index >= N)
+		return;
+	int parent, left, right, child;
+	graphNode* tmp;
+	parent = index;
+	child = left = 2 * index;	//그냥 child까지 싹다 만들어놓고 하자(for 가독성)
+	right = 2 * index + 1;
+
+	if (left > N)	//왼쪽 자식이 없는경우(자식이 없는 경우)
+		return;
+	else if (right <= N)	//오른쪽 자식도 있는 경우
+		child = (Heap[left]->weight < Heap[right]->weight) ? left : right;
+	//원소비교인지 인덱스비교인지 코딩할 때 실수 주의
+	//없으면 그냥 child = left
+
+
+	if (Heap[parent]->weight > Heap[child]->weight) {
+		tmp = Heap[parent];
+		Heap[parent] = Heap[child];
+		Heap[child] = tmp;
+	}
+
+	downheap(child);
+}
+graphNode* removeItem() {
+	if (N < 1)
+		return NULL;
+	graphNode* tmp = Heap[1];	//삭제는 끝항이 아닌 첫 항을 주로 다룸(헷갈 ㄴ)
+	Heap[1] = Heap[N];	//원소 지우고 1 삭제 (삽입이랑 반대)
+	N--;
+	downheap(1);
+	return tmp;
+}
+void printHeap() {
+	for (int i = 1; i <= N; i++)
+		printf("%d ", Heap[i]->vertex);
+	printf("\n");
+}
+/*void inPlaceHeapSort() {
+	int tmp, N = n;
+	rBuildHeap(1);
+	for (int i = n; i >= 2; i--) {
+		tmp = Heap[i];
+		Heap[i] = Heap[1];
+		Heap[1] = tmp;	//힙의 1항과 끝항을 교환 후 삭제하는 과정 필요
+
+		n--;	//한 칸 줄이고 (삭제)
+		downheap(1);	//다운힙 해서 최대 뽑아내기
+	}
+	n = N;
+}*/
+
+
+
+void initGraph(Graph* graph) {
+	for (int i = 0; i < graph->n; i++)
+		graph->adjList[i] = (graphNode*)malloc(sizeof(graphNode));
+}
+graphNode* getNode() {
+	graphNode* new = (graphNode*)malloc(sizeof(graphNode));
+	new->link = NULL;
+
+	return new;
+}
+
+void insertVertex(Graph* graph, int vertex) {
+	int index = vertex - 1;
+	graphNode* tmp = graph->adjList[index];	//tmp에 해당 정점 연결
+	tmp->vertex = vertex;
+	tmp->visit = 0;
+	tmp->weight = 0;
+	tmp->link = NULL;		//이게 문제였네..초기화 똑바로
+	return;
+}
+
+void insertDirectedEdge(Graph* graph, int vertex1, int vertex2, int weight) {
+	//결국 삽입함수를 따로 만드는 게 베스트인 것 같다
+	int index1 = vertex1 - 1;
+	int index2 = vertex2 - 1;
+
+	graphNode* new = getNode();
+	new->vertex = vertex2;
+	new->weight = weight;
+
+	graphNode* tmp = graph->adjList[index1]->link;
+
+	if (tmp == NULL) {
+		graph->adjList[index1]->link = new;
+	}
+	graph->adjList[index1]->link = new;
+	new->link = tmp;
+
+	return;
+}
+void buildGraph(Graph* graph) {
+
+	scanf("%d %d", &graph->n, &graph->m);
+	getchar();
+
+	initGraph(graph);
+	for (int i = 0; i < graph->n; i++)
+		insertVertex(graph, i+1);
+
+
+	int vertex1, vertex2, weight;
+	for (int i = 0; i < graph->m; i++) {
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		getchar();
+		if (vertex1 != vertex2) {
+			insertDirectedEdge(graph, vertex1, vertex2, weight);
+			insertDirectedEdge(graph, vertex2, vertex1, weight);
+		}
+		else {
+			printf("invalid vertex!\n");
+			return;
+		}
+	}
+
+	return;
+}
+
+//index = vertex - 1
+int visited_cnt = 0;
+void Prim(Graph* graph, int start_vertex) {
+	int start_index = start_vertex - 1;
+	int next_index = start_index;
+	int sum = 0;
+	 
+	graphNode* tmp = graph->adjList[start_index]->link;
+	graphNode* tmp_next = tmp;
+	graph->adjList[start_index]->visit = 1;
+
+	visited_cnt = 1;
+//	sum = 1; 이거는 1항 값 넣을 필요 없음 어차피 간선 계산할 때 더해지는 거라 while문 안에서 1항값 반영됨
+	while (visited_cnt<=graph->n) {
+
+		printf("%d ", graph->adjList[next_index]->vertex);
+
+		while (tmp != NULL) {
+//				printf("\n tmp->edge = %d\n", tmp->vertex);
+			insertItem(tmp);
+			tmp = tmp->link;
+		}
+//		printHeap();
+		tmp_next = removeItem();			//가중치 최소인 간선 추출
+//		printf("visited? %d\n", graph->adjList[tmp_next->vertex - 1]->visit);
+		while (tmp_next!=NULL && graph->adjList[tmp_next->vertex - 1]->visit == 1) {
+			//근데 그 간선이 이미 방문한 정점을 향해있으면 다시 추출 (방문검사 다시 하기)
+//			printf("visited? %d\n", graph->adjList[tmp_next->vertex - 1]->visit);
+			tmp_next = removeItem();
+		}
+//		printf("tmp_next's vertex = %d\n", tmp_next->vertex);
+		if (tmp_next != NULL) {
+			next_index = tmp_next->vertex - 1;
+			graph->adjList[next_index]->visit = 1;
+			sum += tmp_next->weight;
+
+			tmp = graph->adjList[next_index]->link;
+		}
+		visited_cnt++;
+	}
+	printf("\n %d", sum);
+}
+
+void printEdges(Graph* graph, int num) {
+	if (num > graph->n || num < 1) {
+		printf("-1\n");
+		return;
+	}
+
+	int index = num - 1;
+	graphNode* tmp = graph->adjList[index];
+
+	printf("%d : ", num);
+	while (tmp != NULL) {
+		printf("%d ", tmp->vertex);
+		tmp = tmp->link;
+	}
+	printf("\n");
+	return;
+}
+
+
+
+
+int main() {
+	Graph* graph = (Graph*)malloc(sizeof(Graph));
+	buildGraph(graph);
+
+	Prim(graph, 1);
+
+	return 0;
+}
+
+
+
+
+//2번
+//걍 적극적으로 새로운 배열, 리스트 만들어보는 걸 주저하면 안 됨
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct Edge {
+	int start;
+	int end;
+	int weight;
+}Edge;
+typedef struct Graph {
+	int n;
+	int m;
+	Edge edges[MAX_VERTEX];
+	int cnt_edges;
+}Graph;
+
+void insertDirectedEdge(Graph* graph, int vertex1, int vertex2, int weight) {
+
+	graph->edges[graph->cnt_edges].start = vertex1;
+	graph->edges[graph->cnt_edges].end = vertex2;
+	graph->edges[graph->cnt_edges].weight = weight;
+
+	graph->cnt_edges++;
+
+	return;
+}
+void edgeWeightSort(Graph* graph) {
+	Edge tmp;
+
+	/*
+	printf("weight Before!\n");
+	for (int i = 0; i < graph->m; i++)
+		printf("%d ", graph->edges[i].weight);
+	printf("\n");
+	*/
+
+	for (int i = 0; i < graph->m - 1; i++) {
+		for (int j = i; j < graph->m; j++) {
+			if (graph->edges[j].weight < graph->edges[i].weight) {
+				tmp = graph->edges[j];
+				graph->edges[j] = graph->edges[i];
+				graph->edges[i] = tmp;
+			}
+		}
+	}
+
+	/*
+	printf("weight SORTED!\n");
+	for (int i = 0; i < graph->m; i++)
+		printf("%d ", graph->edges[i].weight);
+	printf("\n");
+	*/
+	return;
+}
+
+void buildGraph(Graph* graph) {
+
+	scanf("%d %d", &graph->n, &graph->m);
+	getchar();
+	graph->cnt_edges = 0;
+
+	int vertex1, vertex2, weight;
+	for (int i = 0; i < graph->m; i++) {
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		getchar();
+		if (vertex1 != vertex2) {
+			insertDirectedEdge(graph, vertex1, vertex2, weight);
+		}
+		else {
+			printf("invalid vertex!\n");
+			return;
+		}
+	}
+	edgeWeightSort(graph);
+
+	return;
+}
+
+
+void printEdges(Graph* graph, int num) {
+	if (num > graph->n || num < 1) {
+		printf("-1\n");
+		return;
+	}
+
+	int index = num - 1;
+	for (int i = 0; i < graph->m; i++)
+		printf("%d ", graph->edges[i]);
+	printf("\n");
+	return;
+}
+
+
+void Kruskal(Graph* graph) {
+	Edge kruskal[MAX_VERTEX];
+	int cnt_kruskal = 0;
+
+	int parent[MAX_VERTEX];					//각 정점들의 부모노드를 저장
+	for (int i = 0; i < graph->n; i++)		//서로 같다면 부모노드(최솟값)가 같은 한 집합 안에 있는 거임
+		parent[i] = i + 1;
+	
+
+	int start, end, big, small;
+	int sum = 0;
+
+
+	for (int i = 0; i < graph->m; i++) {
+		start = graph->edges[i].start;
+		end = graph->edges[i].end;
+
+		if (parent[start - 1] != parent[end - 1]) {
+
+
+			if (parent[start - 1] > parent[end - 1]) {
+				big = parent[start - 1];
+				small = parent[end - 1];
+			}
+			else {
+				big = parent[end - 1];
+				small = parent[start - 1];
+			}
+
+
+			for (int j = 0; j < graph->n; j++)
+				if (parent[j] == big) 
+					parent[j] = small;
+				
+
+			kruskal[cnt_kruskal++] = graph->edges[i];
+		}
+	}
+
+	for (int i = 0; i < cnt_kruskal; i++) {
+		printf("%d ", kruskal[i].weight);
+		sum += kruskal[i].weight;
+	}
+	printf("\n%d", sum);
+}
+
+int main() {
+	Graph* graph = (Graph*)malloc(sizeof(Graph));
+	buildGraph(graph);
+
+	Kruskal(graph);
+
+	return 0;
+}

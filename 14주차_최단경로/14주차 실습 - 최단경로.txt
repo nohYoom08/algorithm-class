@@ -1,0 +1,214 @@
+//1번 : 인접행렬을 이번 문제처럼 특수하게 초기화하는 경우,
+//그래도 무조건 i행 i열 원소값은 0인 거 무조건 인지.
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+#define INF 20*1000
+
+
+
+
+int graph[MAX_VERTEX][MAX_VERTEX] = { 0 };	
+//이차원 배열 직접 선언할 때는 일차원 이차원 둘다 해줘야 함. 인자 넣을 때랑 착각 x
+int visited[MAX_VERTEX] = { 0 };
+int n, m, s;
+
+int dist[MAX_VERTEX];
+
+int choose() {
+	int min;
+	int min_index = -1;	//바쁘면 과감하게 걍 써라
+
+//	for (int i = 0; i < n; i++)
+//		printf("dist[%d]:%d / visited : %d\n", i, dist[i],visited[i]);
+	
+	min = INF;
+	for (int i = 0; i < n; i++) {		//'최단 경로'이므로 간선 개수가 아닌 정점개수를 판단 (주의)
+	//	printf("dist[%d] in choose : %d, min : %d, visited : %d\n", i, dist[i],min, visited[i]);
+		if (dist[i] < min && visited[i] == 0) {
+			min = dist[i];
+			min_index = i; 
+		}
+	}
+	return min_index;
+}
+
+void insertEdge(int vertex1, int vertex2, int weight) {
+
+	int index1, index2;
+	index1 = vertex1 - 1;
+	index2 = vertex2 - 1;
+	graph[index1][index2] = weight;
+}
+void initGraph() {
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++) {
+			if (i == j)
+				graph[i][j] = 0;
+			else
+				graph[i][j] = INF;
+		}
+}
+void buildGraph() {
+	int vertex1, vertex2, weight;
+	scanf("%d %d %d", &n, &m, &s);
+	initGraph();
+	for (int i = 0; i < m; i++) {
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		insertEdge(vertex1, vertex2, weight);
+		insertEdge(vertex2, vertex1, weight);
+	}
+}
+void printGraph() {
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++)
+			printf("%d ", graph[i][j]);
+		printf("\n");
+	}
+	return;
+}
+
+
+
+void DijkstraShortestPaths(int start_vertex) {
+	for (int i = 0; i < n; i++)
+		dist[i] = graph[start_vertex - 1][i];
+	dist[start_vertex - 1] = 0;
+
+
+	for (int i = 0; i < n - 1; i++) {
+		int u = choose();
+		visited[u] = 1;
+//		printf("u : %d\n", u);
+			
+		for (int j = 0; j < n; j++) {
+			if (visited[j] == 0) {
+				if (dist[u] + graph[u][j] < dist[j])
+					dist[j] = dist[u] + graph[u][j];
+			}
+		}j+
+	}
+}
+
+
+
+int main() {
+	buildGraph();
+//	printGraph();
+	DijkstraShortestPaths(s);
+
+
+	for (int i = 0; i < n; i++)
+		if(i+1!=s && dist[i]!=INF)
+			printf("%d %d\n", i + 1, dist[i]);
+	return 0;
+}
+
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+#define INF 20*1000
+
+
+
+
+typedef struct Edge {
+	int start;
+	int end;
+	int weight;
+}Edge;
+
+int dist[MAX_VERTEX];
+Edge edges[MAX_VERTEX];
+
+int cnt_edge = 0;
+int n, m, s;
+
+void insertEdge(int vertex1, int vertex2, int weight) {
+	edges[cnt_edge].start = vertex1;
+	edges[cnt_edge].end = vertex2;
+	edges[cnt_edge].weight = weight;
+	cnt_edge++;
+}
+void sortEdge() {
+	Edge tmp;
+	for (int i = 0; i < cnt_edge-1; i++) {
+		for (int j = i+1; j < cnt_edge; j++) {
+			if (edges[j].start < edges[i].start) {
+				tmp = edges[i];
+				edges[i] = edges[j];
+				edges[j] = tmp;
+			}
+		}
+	}
+}
+void buildGraph() {
+	int vertex1, vertex2, weight;
+	scanf("%d %d %d", &n, &m, &s);
+	for (int i = 0; i < m; i++) {
+		scanf("%d %d %d", &vertex1, &vertex2, &weight);
+		insertEdge(vertex1, vertex2, weight);
+	}
+}
+void printGraph() {
+	for (int i = 0; i < cnt_edge; i++) 
+		printf("%d %d %d\n", edges[i].start, edges[i].end, edges[i].weight);
+	return;
+}
+
+
+
+void BellmanFord(int start_vertex) {
+	for (int i = 0; i < n; i++)
+		dist[i] = INF;
+	dist[start_vertex - 1] = 0;
+
+	
+	int u, v, w;
+//	printf("cnt_edge! : %d\n", cnt_edge);
+	for (int i = 1; i < n; i++) {
+		for (int j = 0; j < cnt_edge; j++) {
+			u = edges[j].start-1;	
+			//인덱스인지 버텍스인지 항상 주의. 
+			//인덱스로 쓰이는 부분에 대입할 대 버텍스를 갖고온 건지 여부를 잘 파악해야한다.
+			v = edges[j].end-1;
+			w = edges[j].weight;
+			if (dist[u] != INF &&
+				//아니 죄다 INF로 초기화해놓고 INF가 아닌 dist를 찾으라는게 뭔 소리인가
+				//시작 지점이 0이니까 그걸 기점으로 dist[v]가 바뀌면서 전부 바뀌어감
+				dist[u] + w < dist[v]) {
+				dist[v] = dist[u] + w;
+			}
+		}
+	}
+
+	//위의 루프를 한 번 끝냈는데도 한 번 더 작아진다면 음의 싸이클 존재
+	for (int i = 0; i < cnt_edge; i++) {
+		u = edges[i].start - 1;
+		v = edges[i].end-1;
+		w = edges[i].weight;
+		if (dist[u] != INF && dist[u] + w < dist[v])
+			printf("Negative weight cycle!!\n");
+	}
+	
+}
+
+
+
+int main() {
+	buildGraph();
+//	printGraph();
+	sortEdge();
+	BellmanFord(s);
+
+
+	for (int i = 0; i < n; i++)
+		if(i+1!=s && dist[i]!=INF)
+			printf("%d %d\n", i + 1, dist[i]);
+	return 0;
+}

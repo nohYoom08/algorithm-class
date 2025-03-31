@@ -1,0 +1,299 @@
+//1번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+#define MAX_VERTEX 1000
+
+typedef struct edgeNode {
+	char vertex;
+	struct edgeNode* link;
+}edgeNode;
+typedef struct Vertex {
+	char vertex;
+	int* inEdges;	//진입간선들
+	int inDegree;	//진입간선수
+	int* outEdges;		//진출간선들
+	int outDegree;		//진출간선수
+	edgeNode* link;
+}Vertex;
+typedef struct Graph {
+	int n;
+	int m;
+	Vertex* vertices[MAX_VERTEX];
+}Graph;
+
+Graph* graph;
+int topOrder[MAX_VERTEX] = { -1 };
+
+
+
+//Queue 구현
+typedef struct {
+	int* queue;
+	int front, rear;
+	int size;
+}Queue;
+Queue* CreateQueue(int size) {
+	Queue* Q;
+	Q = (Queue*)malloc(sizeof(Queue));
+	Q->front = 0;
+	Q->rear = 0;
+	Q->size = size;
+	Q->queue = (int*)malloc(sizeof(int) * size);
+	for (int i = 0; i < Q->size; i++)
+		Q->queue[i] = 0;	//'초기화'
+	return Q;
+}
+int isEmpty(Queue* Q) {
+	if (Q->front == Q->rear)
+		return 1;
+	else
+		return 0;
+}
+int isFull(Queue* Q) {
+	if ((Q->rear + 1) % Q->size == Q->front)
+		return 1;
+	else
+		return 0;
+}
+void printQueue(Queue* Q) {
+	for (int i = 0; i < Q->size; i++)
+		printf(" %d", Q->queue[i]);
+	printf("\n");
+}
+int enQueue(Queue* Q, int data) {
+	if (isFull(Q) == 1) {
+		printf("overflow");
+		printQueue(Q);
+		return;
+	}
+	else {
+		Q->rear = (Q->rear + 1) % Q->size;
+		Q->queue[Q->rear] = data;
+	}
+}
+int deQueue(Queue* Q) {
+	if (isEmpty(Q) == 1) {
+		printf("underflow");
+		return;
+	}
+	else {
+		Q->front = (Q->front + 1) % Q->size;
+		int result = Q->queue[Q->front];
+		Q->queue[Q->front] = 0;
+		return result;
+	}
+}
+
+edgeNode* getNode()
+{
+	edgeNode* new = (edgeNode*)malloc(sizeof(edgeNode));
+	new->link = NULL;
+
+	return new;
+}
+void initGraph()
+{
+	for (int i = 0; i < graph->n; i++) {
+		graph->vertices[i] = (Vertex*)malloc(sizeof(Vertex));
+		graph->vertices[i]->link = NULL;	//링크 널값 초기화는 그냥 기본으로
+	}
+}
+void insertVertex(char vertex, int index)
+{
+	Vertex* tmp = graph->vertices[index];
+	tmp->vertex = vertex;
+	tmp->inEdges = (int*)malloc(sizeof(int) * graph->n);
+	for (int i = 0; i < graph->n; i++)	//진입간선 초기화
+		tmp->inEdges[i] = -1;	
+		//0으로 안 하는 이유 => index = 0인 정점이 있기 때문
+
+	tmp->inDegree = 0;
+
+	tmp->outEdges = (int*)malloc(sizeof(int) * graph->n);
+	for (int i = 0; i < graph->n; i++)	//진출간선 초기화
+		tmp->outEdges[i] = -1;
+
+	tmp->outDegree = 0;
+
+	return;
+}
+int findIndex(char vertex)
+{
+	for (int i = 0; i < graph->n; i++)	//단순 정점배열들 순회하면서 탐색
+		if (graph->vertices[i]->vertex == vertex)
+			return i;
+
+	return -1;
+}
+void insertEdge(char vertex1, char vertex2)
+{
+	int index1 = findIndex(vertex1);
+	int index2 = findIndex(vertex2);
+	//	printf("index1 = %d / index2 = %d\n", index1, index2);
+
+	if (index1 == -1 || index2 == -1)
+	{
+		printf("그런 정점은 없습니다!");
+		return;
+	}
+
+
+
+	edgeNode* new = getNode();
+	new->vertex = vertex2;
+
+	edgeNode* tmp = graph->vertices[index1]->link;
+	edgeNode* tmp2 = graph->vertices[index1];
+
+
+	//간선 삽입과 동시에 진입, 진출 간선배열에도 값 반영
+	//간선 최초삽입 때 return하고 도망가버리므로 간선 배열은 미리 추가해줘야 함
+	//(다만 return을 안 해준다면 그냥 밑에다 둬도 상관 없다)
+	Vertex* temp1 = graph->vertices[index1];
+	Vertex* temp2 = graph->vertices[index2];
+	temp1->outEdges[temp1->outDegree++] = index2;
+	temp2->inEdges[temp2->inDegree++] = index1;
+
+
+	if (tmp == NULL)
+		//위상순서는 인접리스트에서 간선의 정렬방식이 어떻게 되어있느냐에 따른 차이도 발생할 수 있음.
+		//큐에 넣을 때 무작정 오름차순으로 넣는게 아닌 것!!
+	{
+		graph->vertices[index1]->link = new;
+		return;
+	}
+	else
+	{
+		graph->vertices[index1]->link = new;
+		new->link = tmp;
+	}
+
+
+
+	return;
+}
+void buildGraph()
+{
+	char vertex1, vertex2;
+
+	scanf("%d", &graph->n);
+	initGraph();	//정점 수를 받고나서 initGraph() 실행시킬 것
+	getchar();
+
+
+	for (int i = 0; i < graph->n; i++)	//정점 삽입
+	{
+		scanf("%c", &vertex1);
+		getchar();
+		insertVertex(vertex1, i);
+	}
+
+
+	scanf("%d", &graph->m);
+	getchar();
+	for (int i = 0; i < graph->m; i++)	//간선 삽입
+	{
+		scanf("%c %c", &vertex1, &vertex2);
+		getchar();	
+		insertEdge(vertex1, vertex2);
+	}
+
+	return;
+}
+
+void topologicalSort()
+{
+	Queue* Q = CreateQueue(MAX_VERTEX);
+	int t, u, w;
+	int in[MAX_VERTEX] = { 0 };		//각 정점들의 진입차수로 초기화되는 매개배열
+
+	for (int i = 0; i < graph->n; i++)	//각 정점들의 진입차수 탐색 및 초기화
+	{
+		in[i] = graph->vertices[i]->inDegree;
+		//		printf("%dth inDegree : %d\n", i, in[i]);
+		if (in[i] == 0)
+			enQueue(Q, i);
+	}
+
+	t = 1;	//0은 사이클 존재여부값을 넣을 예정
+
+	while (!isEmpty(Q))
+	{
+		u = deQueue(Q);	//반환된 정점으로 이동
+
+		topOrder[t++] = u;	//위상순서에 바로 추가
+
+		Vertex* vertex_u = graph->vertices[u];
+		for (int i = vertex_u->outDegree - 1; i >= 0; i--)	//현재 위치에서 진출 간선들 조사
+			//나중에 붙일 수록 연결리스트 순서상 앞 쪽 
+			//=> 배열은 정순을 유지하고 있으므로, 여기서 탐색할 땐 **역순**으로 해야 함
+			//(간선 붙이는 문제 조건 확인)
+		{
+			w = vertex_u->outEdges[i];	//진출 간선이 부착된 인접정점 반환
+			in[w]--;	
+				//해당 정점의 진입간선수 1감소 
+				//(이런 조사를 할 때마다 해당 정점의 진입간선 수 하나가 없어진다고 생각)
+
+			if (in[w] == 0) //감소하다가 in배열 원소값이 0이 되버린 정점일 경우 큐에 삽입
+				enQueue(Q, w);
+
+		}
+	}
+
+	if (t <= graph->n)	//위상정렬에 들어간 정점수가 실제 그래프 정점수보다 적은 경우 => 싸이클
+		//t가 1부터 시작했으니, graph->n까지가 범위
+		topOrder[0] = 0;
+	else
+		topOrder[0] = 1;
+
+	return;
+}
+
+void printEdge(int vertex)
+{
+
+	if (vertex > graph->n || vertex < 1)
+	{
+		printf("-1\n");
+		return;
+	}
+
+
+	int index = vertex - 1;
+	edgeNode* tmp = graph->vertices[index]->link;
+	while (tmp != NULL)
+	{
+		printf("%c", tmp->vertex);
+		tmp = tmp->link;
+	}
+	printf("\n");
+
+	return;
+}
+
+
+
+
+
+
+int main()
+{
+	int order;
+	graph = (Graph*)malloc(sizeof(Graph));
+	buildGraph();
+
+	topologicalSort();
+
+	//	for (int i = 0; i < graph->n; i++)
+	//		printEdge(i+1);
+
+	if (topOrder[0])
+		for (int i = 0; i < graph->n; i++) {
+			order = topOrder[i + 1];
+			printf("%c ", graph->vertices[order]->vertex);
+		}
+	else
+		printf("0");
+	return 0;
+}

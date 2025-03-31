@@ -1,0 +1,330 @@
+//1번 - 구조체포인터배열에 대한 개념 체크
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct listNode {
+	struct listNode* link;
+	int key;
+}listNode;
+
+listNode* getNode() {
+	listNode* new = (listNode*)malloc(sizeof(listNode));
+	new->link = NULL;
+
+	return new;
+}
+int hashFunction(int key, int M) {
+	return key % M;
+}
+int findElement(listNode** node, int key, int M) {	//node[i]가 헤더노드(포인터배열은 살짝 다름)
+	int v = hashFunction(key, M);
+
+	listNode* tmp = node[v]->link;	//이미 첫 번째 항 가있음
+	int cnt = 1;
+	while (tmp != NULL && tmp->key != key) {
+		tmp = tmp->link;
+		cnt++;
+	}
+	if (tmp == NULL)
+		return 0;
+	else
+		return cnt;
+}
+void insertItem(listNode** node, int key, int M) {
+	int v = hashFunction(key, M);
+	listNode* new = getNode();
+	new->key = key;
+	if (node[v]->link!=NULL) {
+		new->link = node[v]->link;
+		node[v]->link = new;
+		return;
+	}
+	else {
+		node[v]->link = new;
+		return;
+	}
+}
+int removeItem(listNode** node, int key, int M) {
+	int v = hashFunction(key, M);
+	int flag = 0;
+	if (node[v]->link == NULL)
+		return 0;
+
+	listNode* tmp = node[v]->link, * tmp2 = NULL;
+	int cnt = 1;
+	while (tmp != NULL && tmp->key!=key) {
+		tmp2 = tmp;
+		tmp = tmp->link;
+		cnt++;
+	}
+	if (tmp==NULL)
+		return 0;
+	else {
+		if (tmp2 != NULL)
+			//연결리스트 삭제 기본(노드가 한개냐 없냐 -> 이중연결리스트랑 동일하게 항상 NULL값 조사 필요)
+			tmp2->link = tmp->link;
+		else
+			node[v]->link = tmp->link;
+		return cnt;
+	}
+}
+void printList(listNode** node, int M) {
+	listNode* tmp;
+	for (int i = 0; i < M; i++) {
+		if (node[i]->link != NULL) {
+			tmp = node[i]->link;
+			while (tmp != NULL) {
+				printf("%d ", tmp->key);
+				tmp = tmp->link;
+			}
+		}
+	}
+	printf("\n");
+	return;
+}
+void initBucketArray(listNode** node, int M) {
+	for (int i = 0; i < M; i++) {
+		node[i] = (listNode*)malloc(sizeof(listNode));
+		node[i]->link = NULL;
+	}
+	return;
+}
+int main() {
+	int M, key, result;
+	char fx;
+	scanf("%d", &M);
+	getchar();
+	listNode** list = (listNode**)malloc(sizeof(listNode*) * M);
+	initBucketArray(list, M);
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'e') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			insertItem(list, key, M);
+			break;
+		case 's':
+			scanf("%d", &key);
+			getchar();
+			result = findElement(list, key, M);
+			printf("%d\n", result);
+			break;
+		case 'd':
+			scanf("%d", &key);
+			getchar();
+			result = removeItem(list, key, M);
+			printf("%d\n", result);
+			break;
+		case 'p':
+			printList(list, M);
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+
+	return 0;
+}
+
+
+
+
+//2번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct keyId {
+	int id;
+	int key;
+}keyId;
+
+int hashFunction(int key, int M) {
+	return key % M;
+}
+keyId* findElement(int arr[], int key, int M) {
+	int v = hashFunction(key, M);
+	keyId* new = (keyId*)malloc(sizeof(keyId));
+	for (int i = v; i != (v-1+M)%M; i=(i+1)%M) {
+		if (arr[i] == key) {
+			new->id = i;
+			new->key = key;
+			return new;
+		}
+	}
+	new->id = new->key = -1;
+	return new;
+}
+void insertItem(int arr[], int key, int M) {
+	int v = hashFunction(key, M);
+	
+	for (int i = v; i != (v - 1 + M) % M; i=(i+1)%M) {
+		// 순회 넘어갔을 때 그 전부터 돌리도록 하는 조건문 => 조건식과 명령문 잘 확인
+		if (arr[i] == 0) {
+			arr[i] = key;
+			printf("%d", i);
+			return;
+			//return주의
+		}
+		else
+			printf("C");
+	}
+}
+void printList(int arr[], int M) {
+	for (int i = 0; i < M; i++)
+		printf("%d ", arr[i]);
+	printf("\n");
+}
+int main() {
+	int M, n, key, result;
+	keyId* tmp = NULL;
+	char fx;
+	scanf("%d %d", &M,&n);
+	getchar();
+	int* arr = (int*)malloc(sizeof(int)*M);
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'e') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			insertItem(arr, key, M);
+			printf("\n");
+			break;
+		case 's':
+			scanf("%d", &key);
+			getchar();
+			tmp = findElement(arr, key, M);
+			if (tmp->id == -1)
+				printf("-1\n");
+			else
+				printf("%d %d\n", tmp->id, tmp->key);
+			break;
+		case 'p':
+			printList(arr, M);
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+
+	return 0;
+}
+
+
+
+//3번
+#pragma warning (disable:4996)
+#include <stdio.h>
+#include <stdlib.h>
+typedef struct keyId {
+	int id;
+	int key;
+}keyId;
+
+int hashFunction1(int key, int M) {
+	return key % M;
+}
+int hashFunction2(int key, int q) {
+	return q-(key % q);
+}
+keyId* findElement(int arr[], int key, int M, int q) {
+	int v, v1, v2, cnt;
+	keyId* new = (keyId*)malloc(sizeof(keyId));
+
+	v1 = hashFunction1(key, M);
+	v2 = hashFunction2(key, q);
+	cnt = 0;
+	while (cnt<M) {
+		v = hashFunction1(v1 + v2 * cnt, M);	
+			//해싱 원리 잘 파악해서 변수나 공식 잘못 넣는 실수 하지 말 것
+		if (arr[v] == key) {
+			new->id = v;
+			new->key = key;
+			return new;
+		}
+		cnt++;
+	}
+	new->id = new->key = -1;
+	return new;
+}
+void insertItem(int arr[], int key, int M, int q) {
+	int v, v1, v2, cnt;
+	
+	v1 = hashFunction1(key, M);
+	v2 = hashFunction2(key, q);
+	cnt = 0;
+	while (cnt<M) {
+		v = hashFunction1(v1 + v2 * cnt, M);
+//		printf("v! = %d\n", v);
+		if (arr[v] == 0) {
+			arr[v] = key;
+			printf("%d", v);
+			return;
+		}
+		else
+			printf("C");
+		cnt++;
+	}
+}
+void initBucketArray(int arr[], int M) {
+	for (int i = 0; i < M; i++) 
+		arr[i] = 0;
+	return;
+}
+void printList(int arr[], int M) {
+	for (int i = 0; i < M; i++)
+		printf("%d ", arr[i]);
+	printf("\n");
+}
+
+
+int main() {
+	int M, n, q, key, result;
+	keyId* tmp = NULL;
+	char fx;
+	scanf("%d %d %d", &M,&n,&q);
+	getchar();
+	int* arr = (int*)malloc(sizeof(int)*M);
+	initBucketArray(arr, M);
+
+	scanf("%c", &fx);
+	getchar();
+	while (fx != 'e') {
+		switch (fx) {
+		case 'i':
+			scanf("%d", &key);
+			getchar();
+			insertItem(arr, key, M, q);
+			printf("\n");
+			break;
+		case 's':
+			scanf("%d", &key);
+			getchar();
+			tmp = findElement(arr, key, M,q);
+			if (tmp->id == -1)
+				printf("-1\n");
+			else
+				printf("%d %d\n", tmp->id, tmp->key);
+			break;
+		case 'p':
+			printList(arr, M);
+			break;
+		default:
+			break;
+		}
+		scanf("%c", &fx);
+		getchar();
+	}
+	printList(arr, M);
+
+	return 0;
+}
